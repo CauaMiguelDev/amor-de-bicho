@@ -6,7 +6,6 @@ import 'lenis/dist/lenis.css'
 
 gsap.registerPlugin(ScrollTrigger)
 const PAW = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="10" r="2.2"/><circle cx="9.5" cy="5.5" r="2.2"/><circle cx="14.5" cy="5.5" r="2.2"/><circle cx="18.5" cy="10" r="2.2"/><path d="M12 11c-3.5 0-6.5 4.2-6.5 6.8 0 2 1.6 2.7 3.3 2.2 1.2-.4 2.2-.9 3.2-.9s2 .5 3.2.9c1.7.5 3.3-.2 3.3-2.2C18.5 15.2 15.5 11 12 11Z"/></svg>'
-const HEART = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21C4 15.5 2 11.5 3.5 8 5 4.6 9.5 4 12 7.2 14.5 4 19 4.6 20.5 8 22 11.5 20 15.5 12 21Z"/></svg>'
 // Height of the golden's visible silhouette as a fraction of the triptych width
 // (centre panel = 1.14/3.14 of the width, photo 1152/1100 tall, head starts 1.7% down).
 const PET_K = .3737
@@ -35,6 +34,7 @@ export function startFx(): () => void {
     el.addEventListener('transitionend', end)
   }
   const header = document.querySelector<HTMLElement>('.header')
+  const topbar = document.querySelector<HTMLElement>('.topbar')
   const hero = document.querySelector<HTMLElement>('.hero')
 
   // Preloader: leave once fonts are in, never longer than 2.2s.
@@ -52,7 +52,7 @@ export function startFx(): () => void {
   const fit = () => {
     if (!hero || !copy) return
     if (innerWidth < BREAKPOINT) { hero.style.height = ''; hero.style.removeProperty('--tw'); return }
-    const maxH = Math.min(1000, Math.max(640, innerHeight - (header?.offsetHeight ?? 0)))
+    const maxH = Math.min(1000, Math.max(640, innerHeight - (header?.offsetHeight ?? 0) - (topbar?.offsetHeight ?? 0)))
     const copyB = copy.offsetTop + copy.offsetHeight + 22, W = hero.clientWidth
     let h = copyB + PET_K * W, w = W
     if (h > maxH) { h = maxH; w = Math.max(W * .62, (maxH - copyB) / PET_K) }
@@ -111,13 +111,26 @@ export function startFx(): () => void {
   }, { passive: true })
 
   // Nav: highlight the section currently in the middle of the screen.
-  const links = new Map([...document.querySelectorAll<HTMLAnchorElement>('.nav a[href^="#"]')].map(a => [a.hash, a]))
+  const links = new Map([...document.querySelectorAll<HTMLAnchorElement>('.nav > a[href^="#"]')].map(a => [a.hash, a]))
   const spy = new IntersectionObserver(entries => entries.forEach(e => {
     const a = links.get('#' + e.target.id)
     if (e.isIntersecting) { links.forEach(l => l.classList.remove('is-active')); a?.classList.add('is-active') } else a?.classList.remove('is-active')
   }), { rootMargin: '-45% 0px -50% 0px' })
   links.forEach((_, id) => { const s = document.querySelector(id); if (s) spy.observe(s) })
   off.push(() => spy.disconnect())
+  const nav = document.querySelector<HTMLElement>('.nav')
+  const pillTo = (a?: HTMLElement | null) => {
+    if (!nav) return
+    if (!a || innerWidth < 1100) return nav.style.setProperty('--no', '0')
+    nav.style.setProperty('--nx', `${a.offsetLeft}px`); nav.style.setProperty('--nw', `${a.offsetWidth}px`); nav.style.setProperty('--no', '1')
+  }
+  const rest = () => { if (!nav?.matches(':hover')) pillTo(nav?.querySelector<HTMLElement>('a.is-active')) }
+  links.forEach(a => on(a, 'pointerenter', () => pillTo(a)))
+  if (nav) {
+    on(nav, 'pointerleave', rest)
+    const mo = new MutationObserver(rest); mo.observe(nav, { subtree: true, attributeFilter: ['class'] }); off.push(() => mo.disconnect())
+  }
+  on(window, 'resize', perFrame(rest))
 
   // Floating call appears once the hero has mostly scrolled away.
   const call = document.querySelector('.floating-call')
@@ -132,6 +145,7 @@ export function startFx(): () => void {
   const lenis = new Lenis({ lerp: .1, anchors: { offset: -80 } })
   const raf = (t: number) => lenis.raf(t * 1000)
   lenis.on('scroll', ScrollTrigger.update)
+  on(window, 'fx:menu', (e: CustomEvent<boolean>) => e.detail ? lenis.stop() : lenis.start())
   gsap.ticker.add(raf); gsap.ticker.lagSmoothing(0)
   const ctx = gsap.context(() => {
     // Headings: words rise out of their masks, 55ms apart. Hero waits for the preloader curtain.
@@ -227,30 +241,6 @@ export function startFx(): () => void {
       el.style.setProperty('--sx', `${e.clientX - r.left}px`); el.style.setProperty('--sy', `${e.clientY - r.top}px`)
     })))
 
-    // Cursor companion: an orange ring trails the pointer and changes with what is under it
-    // (grows on links, turns into a heart over the pets, shrinks on press). The native cursor stays.
-    const ring = document.createElement('div'), dot = document.createElement('div')
-    ring.className = 'cursor-ring'; ring.innerHTML = `<i></i><span>${HEART}</span>`; dot.className = 'cursor-dot'
-    document.body.append(ring, dot)
-    let mx = -100, my = -100, rx = mx, ry = my, craf = 0
-    const follow = () => {
-      rx += (mx - rx) * .18; ry += (my - ry) * .18
-      ring.style.translate = `${rx}px ${ry}px`
-      craf = Math.abs(mx - rx) + Math.abs(my - ry) > .2 ? requestAnimationFrame(follow) : 0
-    }
-    on(window, 'pointermove', (e: PointerEvent) => {
-      if (e.pointerType !== 'mouse') return
-      mx = e.clientX; my = e.clientY; dot.style.translate = `${mx}px ${my}px`
-      const t = e.target as Element
-      ring.dataset.state = t.closest('.pet-stage') ? 'pet' : t.closest('a,button') ? 'link' : t.closest('[data-tilt]') ? 'card' : ''
-      document.body.classList.add('has-cursor')
-      if (!craf) craf = requestAnimationFrame(follow)
-    }, { passive: true })
-    on(document, 'pointerleave', () => document.body.classList.remove('has-cursor'))
-    on(window, 'pointerdown', () => ring.classList.add('is-down'))
-    on(window, 'pointerup', () => ring.classList.remove('is-down'))
-    off.push(() => { cancelAnimationFrame(craf); ring.remove(); dot.remove(); document.body.classList.remove('has-cursor') })
-
     // Mouse parallax on the hero decor: --mouse-x/--mouse-y (-1..1) eased toward the pointer, loop sleeps when settled.
     if (hero) {
       let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0
@@ -283,7 +273,7 @@ export function startFx(): () => void {
     }
   }
 
-  // Ripple + heart burst on primary actions (touch included).
+  // Ripple + paw-print burst on primary actions (touch included).
   on(document, 'pointerdown', (e: PointerEvent) => {
     const btn = (e.target as Element).closest<HTMLElement>('.button,.floating-call,.contact-phone,.header-call')
     if (!btn) return
@@ -292,7 +282,7 @@ export function startFx(): () => void {
     btn.append(rip); setTimeout(() => rip.remove(), 700)
     for (let i = 0; i < 9; i++) {
       const h = document.createElement('span'), a = (i / 9) * Math.PI * 2 + Math.random() * .4, d = 45 + Math.random() * 45
-      h.className = 'burst'; h.innerHTML = i % 3 ? HEART : PAW
+      h.className = 'burst'; h.innerHTML = PAW
       h.style.left = `${e.clientX}px`; h.style.top = `${e.clientY}px`
       h.style.setProperty('--dx', `${Math.cos(a) * d}px`); h.style.setProperty('--dy', `${Math.sin(a) * d - 20}px`)
       h.style.setProperty('--r', `${Math.random() * 90 - 45}deg`)
@@ -305,7 +295,7 @@ export function startFx(): () => void {
 
 // The pets: each photo is split at its board line (see .pet-stage in CSS). Above the line the pet breathes,
 // sways and leans toward the pointer (skew/scale pivot on the line, so nothing tears); below it a flat cover
-// in the board colour lets the pet duck out of sight and peek back up. They react with hearts, never words.
+// in the board colour hides the pet while it peeks up on entrance. Once up, the pets always stay in view.
 function petLife({ fine, intro, perFrame, on }: {
   fine: boolean; intro: Promise<void>
   perFrame: <E>(fn: (e: E) => void) => (e: E) => void
@@ -321,20 +311,10 @@ function petLife({ fine, intro, perFrame, on }: {
       gsap.fromTo(img, { '--sway': -.8 }, { '--sway': .8, duration: 2.6 + Math.random() * 1.4, ease: 'sine.inOut', yoyo: true, repeat: -1, paused: true }),
     ]
     let busy = false, visible = false
-    const hearts = () => {
-      for (let i = 0; i < 3; i++) {
-        const h = document.createElement('span')
-        h.className = 'pet-heart'; h.innerHTML = HEART
-        h.style.setProperty('--hx', `${35 + Math.random() * 30}%`); h.style.setProperty('--hd', `${(Math.random() - .5) * 60}px`)
-        h.style.setProperty('--hr', `${(Math.random() - .5) * 50}deg`); h.style.animationDelay = `${i * .12}s`
-        panel.append(h); setTimeout(() => h.remove(), 1700)
-      }
-    }
-    // Excited little stretch-and-settle; hearts only when someone actually played with the pet.
-    const hop = (love = true) => {
+    // A little stretch-and-settle when someone plays with the pet.
+    const hop = () => {
       if (busy) return
       busy = true
-      if (love) hearts()
       gsap.timeline({ onComplete: () => { busy = false } })
         .to(img, { '--perk': 1.075, duration: .16, ease: 'power2.out' })
         .to(img, { '--perk': .965, duration: .13, ease: 'power2.in' })
@@ -362,7 +342,7 @@ function petLife({ fine, intro, perFrame, on }: {
 
   const heroPets = pets.filter(p => p.stage.closest('.hero'))
   const miniPets = pets.filter(p => !p.stage.closest('.hero'))
-  // Entrance: dachshund, golden, cat pop up in turn; then the golden greets you with hearts.
+  // Entrance: dachshund, golden, cat pop up in turn; then the golden perks up.
   intro.then(() => {
     heroPets.forEach((p, i) => p.peek(.35 + i * .16))
     setTimeout(() => heroPets[1]?.hop(), 1900)
@@ -374,17 +354,11 @@ function petLife({ fine, intro, perFrame, on }: {
     })
     kill.push(() => st.kill())
   }
-  // Leaving the hero, the pets duck behind their boards (and pop back up on the way back).
-  const duck = gsap.timeline({ scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: .6 } })
-  heroPets.forEach((p, i) => duck
-    .to(p.stage, { '--cduck': 1, duration: .25, ease: 'none' }, .1 + i * .08)
-    .to(p.stage, { '--duck': p.line * .95, duration: .6, ease: 'power1.in' }, .1 + i * .08))
-
-  // Now and then, when nobody is playing with them, a visible pet perks up (quietly, no hearts).
+  // Now and then, when nobody is playing with them, a visible pet perks up.
   const timer = setInterval(() => {
     if (document.hidden || performance.now() - lastTouch < 6000) return
     const awake = pets.filter(p => p.isVisible())
-    awake[Math.floor(Math.random() * awake.length)]?.hop(false)
+    awake[Math.floor(Math.random() * awake.length)]?.hop()
   }, 8000)
 
   // Heads follow the pointer: lean (skew) toward it, stronger the closer it gets.
@@ -398,5 +372,5 @@ function petLife({ fine, intro, perFrame, on }: {
     })
   }))
 
-  return () => { clearInterval(timer); duck.scrollTrigger?.kill(); duck.kill(); kill.forEach(f => f()) }
+  return () => { clearInterval(timer); kill.forEach(f => f()) }
 }

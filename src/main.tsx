@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { ArrowDown, ArrowRight, ArrowUpRight, Camera, Cat, Check, CheckCheck, Clock as ClockIcon, Copy, Heart, HeartHandshake, Instagram, MapPin, MessageCircle, MoonStar, Navigation, PawPrint, Phone, ShieldCheck, ShoppingBag, Sparkles, Star, Stethoscope, Sun, Syringe } from 'lucide-react'
+import { ArrowDown, ArrowRight, ArrowUpRight, CalendarCheck, Camera, Cat, Check, CheckCheck, Clock as ClockIcon, Copy, Heart, HeartHandshake, Instagram, MapPin, MessageCircle, MoonStar, Navigation, PawPrint, Phone, ShoppingBag, Sparkles, Star, Stethoscope, Sun, Syringe } from 'lucide-react'
 import './style.css'
 import { startFx } from './fx'
 import { brand, fullAddress, reviews, reviewTopics } from './brand'
@@ -11,11 +11,12 @@ const imageRoot = 'https://polo-pecan-73837341.figma.site/_assets/v11/'
 const score = brand.rating.score.toLocaleString('pt-BR', { minimumFractionDigits: 1 })
 
 // line: where the green board starts, as % of the photo's height (measured from the PNGs).
-// board: the board's flat colour, painted behind/over the photo so the pet can duck behind it.
+// fill: how much of the care window height the pet takes (the dachshund is wide, so it gets less).
+// board: the board's flat colour, painted behind/over the photo so the pet can peek up from behind it.
 const pets = {
-  dachshund: { src: imageRoot + '8d44b25186ef45a5789c74668fb781cea4e1ff49.png', w: 870, h: 762, line: 50.13, board: '#a7e8b0', alt: 'Cachorrinho dachshund com as patas apoiadas em um painel verde' },
-  golden: { src: imageRoot + '96745c4e72ad5c5208e53a885df797fd82cd854a.png?h=1024', w: 977, h: 1024, line: 67.01, board: '#003907', alt: 'Golden retriever sorridente com as patas sobre um painel verde-escuro' },
-  cat: { src: imageRoot + '81bd2e7a66b58f3d8f3ad78fd1ebf01af8dfdee1.png', w: 870, h: 816, line: 53.43, board: '#a7e8b0', alt: 'Gatinho laranja curioso espiando por cima de um painel verde' },
+  dachshund: { src: imageRoot + '8d44b25186ef45a5789c74668fb781cea4e1ff49.png', w: 870, h: 762, line: 50.13, board: '#a7e8b0', fill: .76, alt: 'Cachorrinho dachshund com as patas apoiadas em um painel verde' },
+  golden: { src: imageRoot + '96745c4e72ad5c5208e53a885df797fd82cd854a.png?h=1024', w: 977, h: 1024, line: 67.01, board: '#003907', fill: .9, alt: 'Golden retriever sorridente com as patas sobre um painel verde-escuro' },
+  cat: { src: imageRoot + '81bd2e7a66b58f3d8f3ad78fd1ebf01af8dfdee1.png', w: 870, h: 816, line: 53.43, board: '#a7e8b0', fill: .82, alt: 'Gatinho laranja curioso espiando por cima de um painel verde' },
 }
 type PetData = typeof pets.cat
 
@@ -102,6 +103,10 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [activeCare, setActiveCare] = useState(0)
+  // Care tabs rotate on their own while the section is on screen, until someone picks one.
+  const [careAuto, setCareAuto] = useState(true)
+  const [careHold, setCareHold] = useState(false)
+  const [careSeen, setCareSeen] = useState(false)
   const [review, setReview] = useState({ i: 0, out: -1 })
   const [reviewPaused, setReviewPaused] = useState(false)
   const [routeRun, setRouteRun] = useState(0)
@@ -110,15 +115,18 @@ function App() {
   const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const progress = useRef<HTMLDivElement>(null)
   const choices = useRef<HTMLDivElement>(null)
+  const careBox = useRef<HTMLDivElement>(null)
+  const header = useRef<HTMLElement>(null)
   const deck = useRef<HTMLDivElement>(null)
   const drag = useRef<number | null>(null)
 
   const care = [
-    { title: 'Consultas e exames', icon: Stethoscope, text: 'Um lugar para cuidar de quem faz parte da sua família.', detail: 'Check-ups, consultas e exames com uma equipe que explica cada passo, sem pressa. Do primeiro filhote ao companheiro de muitos anos.', action: 'Agendar uma consulta', href: talk },
-    { title: 'Atendimento 24 horas', icon: MoonStar, text: 'De dia, de noite. Quando o seu melhor amigo precisar.', detail: 'Plantão todos os dias, inclusive feriados. Numa emergência, ligue antes de sair de casa: a equipe já se prepara para receber vocês.', action: 'Ligar agora', href: phone },
-    { title: 'Vacinas e prevenção', icon: Syringe, text: 'Prevenir também é uma forma de dizer “eu te amo”.', detail: 'Vacinas, vermifugação e orientação para cada fase da vida. A carteirinha fica em dia e a gente lembra junto com você das próximas doses.', action: 'Falar com a equipe', href: talk },
-    { title: 'Pet shop e banho', icon: ShoppingBag, text: 'Mais cuidado para os pequenos momentos do dia a dia.', detail: 'Rações, petiscos, acessórios e banho e tosa no mesmo endereço da clínica. Seu pet sai cheiroso, e você sai tranquilo.', action: 'Consultar a equipe', href: talk },
+    { title: 'Consultas e exames', sub: 'Check-ups, exames e retornos', icon: Stethoscope, pet: pets.golden, badge: 'Consulta sem pressa', text: 'Um lugar para cuidar de quem faz parte da sua família.', detail: 'Tempo para examinar com calma, explicar cada passo e tirar todas as dúvidas. Do primeiro filhote ao companheiro de muitos anos.', list: ['Check-up completo', 'Exames de sangue e de imagem', 'Retorno acompanhado'], action: 'Agendar consulta', href: talk },
+    { title: 'Atendimento 24 horas', sub: 'Emergências a qualquer hora', icon: MoonStar, pet: pets.dachshund, badge: 'Plantão aberto agora', text: 'De dia, de noite. Quando o seu melhor amigo precisar.', detail: 'Plantão todos os dias, inclusive feriados. Numa emergência, ligue antes de sair de casa: a equipe já se prepara para receber vocês.', list: ['Veterinário de plantão', 'Prioridade para emergências', 'Internação monitorada'], action: 'Ligar agora', href: phone },
+    { title: 'Vacinas e prevenção', sub: 'Carteirinha sempre em dia', icon: Syringe, pet: pets.cat, badge: 'A gente lembra das doses', text: 'Prevenir também é uma forma de dizer “eu te amo”.', detail: 'Vacinas, vermifugação e orientação para cada fase da vida, com a carteirinha organizada e aviso quando chegar a próxima dose.', list: ['Vacinas para cães e gatos', 'Vermífugo e antipulgas', 'Lembrete das próximas doses'], action: 'Falar com a equipe', href: talk },
+    { title: 'Pet shop, banho e tosa', sub: 'Ração, acessórios e banho', icon: ShoppingBag, pet: pets.golden, badge: 'Sai cheiroso e feliz', text: 'Mais cuidado para os pequenos momentos do dia a dia.', detail: 'Rações, petiscos, acessórios e banho e tosa com hora marcada, no mesmo endereço da clínica. Seu pet sai cheiroso, e você sai tranquilo.', list: ['Banho e tosa com hora marcada', 'Rações e petiscos', 'Acessórios e higiene'], action: 'Consultar a equipe', href: talk },
   ]
+  const item = care[activeCare]
   const steps = [
     { title: 'Você chama.', icon: Phone, text: 'Ligue ou mande mensagem, de dia ou de madrugada. A equipe já orienta o que fazer antes de você sair de casa.' },
     { title: 'A gente recebe.', icon: Stethoscope, text: 'Triagem logo na chegada, prioridade para emergências e um veterinário explicando cada passo, sem pressa.' },
@@ -154,13 +162,34 @@ function App() {
     return () => clearTimeout(t)
   }, [review.i, reviewPaused])
 
+  useEffect(() => {
+    const box = careBox.current
+    if (!box) return
+    const io = new IntersectionObserver(([e]) => setCareSeen(e.isIntersecting), { threshold: .35 })
+    io.observe(box)
+    return () => io.disconnect()
+  }, [])
+  useEffect(() => {
+    if (!careAuto || careHold || !careSeen || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const t = setTimeout(() => setActiveCare(a => (a + 1) % care.length), 6500)
+    return () => clearTimeout(t)
+  }, [activeCare, careAuto, careHold, careSeen])
+
+  // Mobile menu: full-height sheet under the header; the page behind it stops scrolling.
+  useEffect(() => {
+    const bottom = header.current?.getBoundingClientRect().bottom ?? 72
+    document.documentElement.style.setProperty('--hb', `${Math.max(0, bottom)}px`)
+    document.documentElement.classList.toggle('menu-open', menuOpen)
+    window.dispatchEvent(new CustomEvent('fx:menu', { detail: menuOpen }))
+  }, [menuOpen])
+
   // Sliding highlight behind the active care option.
   useLayoutEffect(() => {
     const box = choices.current
     if (!box) return
     const place = () => {
       const b = box.querySelectorAll<HTMLElement>('.care-choice')[activeCare]
-      box.style.setProperty('--py', b.offsetTop + 8 + 'px'); box.style.setProperty('--ph', b.offsetHeight - 16 + 'px')
+      box.style.setProperty('--py', b.offsetTop + 'px'); box.style.setProperty('--ph', b.offsetHeight + 'px')
     }
     place()
     const ro = new ResizeObserver(place); ro.observe(box)
@@ -184,20 +213,38 @@ function App() {
     },
   }
 
-  const navLinks = [['Nossos cuidados', '#cuidados'], ['A clínica', '#clinica'], ['Avaliações', '#avaliacoes'], ['Onde estamos', '#localizacao']]
+  const navLinks = [['Cuidados', '#cuidados'], ['Diferenciais', '#diferenciais'], ['Como funciona', '#como-funciona'], ['Avaliações', '#avaliacoes'], ['Onde estamos', '#localizacao']]
+  const closeMenu = () => setMenuOpen(false)
 
   return <>
     <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
     <div className="reading-progress" ref={progress}><PawPrint size={14} /></div>
-    <header className="header" id="inicio">
+    <div className="topbar">
+      <div className="topbar-inner">
+        <span className="topbar-status"><i className="live-dot" /> Plantão aberto agora<span className="topbar-hide"> · <time>{now.label}</time></span></span>
+        <a className="topbar-link topbar-hide" href="#localizacao"><MapPin size={13} /> {brand.address.street} · {brand.address.district}</a>
+        <span className="topbar-link topbar-hide"><Syringe size={13} /> Clínica, vacinas, banho e pet shop no mesmo lugar</span>
+        <a className="topbar-link" href="#avaliacoes"><Star size={12} fill="currentColor" strokeWidth={0} /> {score} · {brand.rating.count} avaliações</a>
+      </div>
+    </div>
+    <header className="header" id="inicio" ref={header}>
       <div className="header-inner">
         <Logo />
-        <nav className={menuOpen ? 'nav nav-open' : 'nav'} id="main-nav" aria-label="Navegação principal">
-          {navLinks.map(([label, href], i) => <a href={href} key={href} style={{ '--i': i } as React.CSSProperties} onClick={() => setMenuOpen(false)}><span className="roll"><span data-text={label}>{label}</span></span></a>)}
-          <a href={phone} className="mobile-nav-call" style={{ '--i': 4 } as React.CSSProperties}><Phone size={16} /> {brand.phone.label}</a>
+        <nav className={menuOpen ? 'nav nav-open' : 'nav'} id="main-nav" aria-label="Navegação principal" data-lenis-prevent>
+          <span className="nav-pill" aria-hidden="true" />
+          {navLinks.map(([label, href], i) => <a href={href} key={href} style={{ '--i': i } as React.CSSProperties} onClick={closeMenu}><small className="nav-num" aria-hidden="true">0{i + 1}</small><span className="roll"><span data-text={label}>{label}</span></span><ArrowUpRight className="nav-arrow" size={22} aria-hidden="true" /></a>)}
+          <div className="nav-extra" style={{ '--i': navLinks.length } as React.CSSProperties}>
+            <span className="nav-extra-status"><i className="live-dot" /> Plantão aberto agora · <time>{now.label}</time></span>
+            <a className="button button-orange" href={phone} onClick={closeMenu}><Phone size={17} /><span className="label">Ligar {brand.phone.label}</span></a>
+            <a className="button button-green" href={talk} onClick={closeMenu}><CalendarCheck size={17} /><span className="label">Agendar consulta</span></a>
+            <span className="nav-extra-address"><MapPin size={15} /> {brand.address.street} · {brand.address.district}</span>
+          </div>
         </nav>
-        <a className="header-call" href={talk}><MessageCircle size={16} /><span>Fale com a gente</span><Swap><ArrowUpRight size={17} /></Swap></a>
-        <button className={`menu-toggle ${menuOpen ? 'is-open' : ''}`} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen} aria-controls="main-nav" onClick={() => setMenuOpen(!menuOpen)}><span /><span /></button>
+        <div className="header-actions">
+          <a className="header-phone" href={phone} aria-label={`Emergência 24 horas: ligar para ${brand.phone.label}`}><span className="header-phone-icon"><Phone size={16} /></span><span className="header-phone-text"><small>Emergência 24h</small><strong>{brand.phone.label}</strong></span></a>
+          <a className="header-call" href={talk}><CalendarCheck size={16} /><span>Agendar consulta</span><Swap><ArrowUpRight size={17} /></Swap></a>
+          <button className={`menu-toggle ${menuOpen ? 'is-open' : ''}`} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen} aria-controls="main-nav" onClick={() => setMenuOpen(!menuOpen)}><span /><span /></button>
+        </div>
       </div>
     </header>
 
@@ -211,6 +258,7 @@ function App() {
           <div className="hero-status">
             <a className="status-pill" href="#avaliacoes"><Star size={14} fill="currentColor" strokeWidth={0} /><strong>{score}</strong><span>· {brand.rating.count} avaliações</span></a>
             <span className="status-pill"><i className="live-dot" /> Aberto agora · <time>{now.label}</time></span>
+            <a className="status-pill status-pill-call" href={phone}><Phone size={13} /> Emergência <strong>{brand.phone.label}</strong></a>
           </div>
         </div>
 
@@ -227,19 +275,40 @@ function App() {
         <PawPrint className="hero-paw" size={30} aria-hidden="true" data-speed=".9" /><Heart className="hero-heart" size={29} aria-hidden="true" data-speed="1.2" />
 
         <div className="pet-triptych" aria-label="Cães e gatos, nossos melhores amigos">
-          <Pet pet={pets.dachshund} className="pet-left"><div className="pet-caption"><span className="caption-icon"><Heart size={21} /></span><span>Pequenos amigos.<br /><strong>Um amor gigante.</strong></span></div></Pet>
+          <Pet pet={pets.dachshund} className="pet-left"><a className="board-info" href={phone}><span className="board-icon board-icon-call"><Phone size={19} /></span><span className="board-text"><small>Emergência 24 horas</small><strong>{brand.phone.label}</strong><em>Ligue antes de sair de casa</em></span><Swap><ArrowUpRight size={17} /></Swap></a></Pet>
           <Pet pet={pets.golden} className="pet-center"><div className="board-cta"><a className="button button-orange hero-cta" href={talk}><MessageCircle size={16} /><span className="label">Conte com a gente</span><Swap className="button-arrow"><ArrowUpRight size={17} /></Swap></a><a className="board-link" href="#cuidados">ou conheça nossos cuidados <Swap dir="y"><ArrowDown size={14} /></Swap></a></div></Pet>
-          <Pet pet={pets.cat} className="pet-right"><div className="pet-caption"><span className="caption-icon"><ShieldCheck size={21} /></span><span>Carinho em cada detalhe.<br /><strong>Cuidado em cada momento.</strong></span></div></Pet>
+          <Pet pet={pets.cat} className="pet-right"><a className="board-info" href="#localizacao"><span className="board-icon"><MapPin size={19} /></span><span className="board-text"><small>Onde estamos</small><strong>{brand.address.street}</strong><em>{brand.address.district} · ver no mapa</em></span><Swap><ArrowUpRight size={17} /></Swap></a></Pet>
         </div>
       </section>
 
       <div className="care-ribbon" aria-label="Clínica veterinária 24h, vacinas, banho e tosa e pet shop"><div className="ribbon-track">{[0, 1].map(n => <div className="ribbon-content" key={n} aria-hidden={n === 1 ? true : undefined}><span><PawPrint /> Amor em cada cuidado</span><span><MoonStar /> Clínica veterinária 24h</span><span><Syringe /> Vacinas e prevenção</span><span><Sparkles /> Banho e tosa</span><span><ShoppingBag /> Pet shop</span><span><Heart /> Pertinho de você</span></div>)}</div></div>
 
       <section className="care-section section-pad" id="cuidados">
-        <div className="section-heading reveal"><h2>Todo cuidado começa<br />com um pouco de <em>amor.</em></h2><p>Da rotina aos momentos inesperados,{' '}<br />seu melhor amigo merece atenção de verdade.</p></div>
-        <div className="care-layout reveal">
-          <div className="care-choices" ref={choices}><span className="care-pill" aria-hidden="true" />{care.map((item, i) => <button key={item.title} className={`care-choice ${activeCare === i ? 'is-active' : ''}`} aria-expanded={activeCare === i} aria-controls="care-detail" onClick={() => setActiveCare(i)}><item.icon size={25} /><span>{item.title}</span><ArrowUpRight className="care-choice-arrow" size={23} /></button>)}</div>
-          <div className="care-detail" data-tilt data-spot id="care-detail" role="region" aria-label={care[activeCare].title} aria-live="polite"><div className="care-detail-copy" key={activeCare}><div className="care-detail-symbol">{React.createElement(care[activeCare].icon)}</div><h3>{care[activeCare].text}</h3><p>{care[activeCare].detail}</p><a className="text-link" href={care[activeCare].href}>{care[activeCare].action}<Swap><ArrowUpRight size={18} /></Swap></a></div><PawPrint className="detail-paw" aria-hidden="true" /></div>
+        <div className="care-layout" ref={careBox} onPointerEnter={() => setCareHold(true)} onPointerLeave={() => setCareHold(false)} onFocus={() => setCareHold(true)} onBlur={() => setCareHold(false)}>
+          <div className="care-side">
+            <div className="care-head reveal">
+              <span className="eyebrow"><PawPrint size={14} /> Nossos cuidados</span>
+              <h2>Todo cuidado começa{' '}<br />com um pouco de <em className="mark">amor<svg className="scribble" viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path pathLength={1} d="M4 14C38 7 78 5 118 8s62 7 78-2" /></svg></em><span className="orange-period">.</span></h2>
+              <p>Da rotina aos momentos inesperados, seu melhor amigo merece atenção de verdade. Escolha um cuidado e veja como a gente faz.</p>
+            </div>
+            <div className="care-choices reveal" ref={choices} role="tablist" aria-label="Nossos cuidados"><span className="care-pill" aria-hidden="true" />{care.map((c, i) => <button key={c.title} role="tab" id={`care-tab-${i}`} aria-selected={activeCare === i} aria-controls="care-detail" className={`care-choice ${activeCare === i ? 'is-active' : ''}`} onClick={() => { setActiveCare(i); setCareAuto(false) }}>
+              <span className="care-num" aria-hidden="true">0{i + 1}</span><span className="care-icon"><c.icon size={21} /></span><span className="care-label"><strong>{c.title}</strong><small>{c.sub}</small></span><ArrowUpRight className="care-choice-arrow" size={20} />
+              {activeCare === i && careAuto && <i className={`care-timer ${careHold || !careSeen ? 'paused' : ''}`} key={`t${activeCare}`} aria-hidden="true" />}
+            </button>)}</div>
+          </div>
+          <div className="care-detail reveal" data-spot id="care-detail" role="tabpanel" aria-labelledby={`care-tab-${activeCare}`} aria-live="polite">
+            <div className="care-window" aria-hidden="true" style={{ '--line': item.pet.line + '%', '--lf': item.pet.line / 100, '--board': item.pet.board, '--fill': item.pet.fill } as React.CSSProperties}>
+              <span className="care-window-ledge" />
+              <img key={`p${activeCare}`} src={item.pet.src} alt="" width={item.pet.w} height={item.pet.h} loading="lazy" draggable={false} />
+              <span className="care-window-badge" key={`b${activeCare}`}><item.icon size={15} /> {item.badge}</span>
+            </div>
+            <div className="care-detail-copy" key={activeCare}>
+              <h3>{item.text}</h3>
+              <p>{item.detail}</p>
+              <ul className="care-list">{item.list.map(l => <li key={l}><Check size={15} strokeWidth={2.4} /> {l}</li>)}</ul>
+              <a className="button button-orange" href={item.href}>{item.href.startsWith('tel:') ? <Phone size={16} /> : <CalendarCheck size={16} />}<span className="label">{item.action}</span><Swap className="button-arrow"><ArrowUpRight size={17} /></Swap></a>
+            </div>
+          </div>
         </div>
       </section>
 
