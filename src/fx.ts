@@ -163,6 +163,28 @@ export function startFx(): () => void {
     document.querySelectorAll<HTMLElement>('.rise').forEach(s => gsap.fromTo(s, { scale: .94, '--r': '96px' }, {
       scale: 1, '--r': '40px', ease: 'none', scrollTrigger: { trigger: s, start: 'top bottom', end: 'top 55%', scrub: .5 },
     }))
+    // Depth parallax: [data-speed] drifts against the scroll, faster the higher the speed.
+    document.querySelectorAll<HTMLElement>('[data-speed]').forEach(el => {
+      const d = parseFloat(el.dataset.speed!) * 60
+      gsap.fromTo(el, { y: d }, { y: -d, ease: 'none', scrollTrigger: { trigger: el.closest('section') ?? el, start: 'top bottom', end: 'bottom top', scrub: true } })
+    })
+    // The manifesto's two columns slide past each other.
+    gsap.fromTo('.clinic-statement', { y: 50 }, { y: -50, ease: 'none', scrollTrigger: { trigger: '.clinic-section', start: 'top bottom', end: 'bottom top', scrub: true } })
+    // Giant words: the two lines run in opposite directions while the band crosses the screen.
+    document.querySelectorAll<HTMLElement>('.big-line').forEach(line => {
+      const dir = +line.dataset.dir!
+      gsap.fromTo(line, { xPercent: dir < 0 ? 0 : -25 }, { xPercent: dir < 0 ? -25 : 0, ease: 'none', scrollTrigger: { trigger: '.big-words', start: 'top bottom', end: 'bottom top', scrub: .4 } })
+    })
+    // Stacked steps: each card shrinks and dims as the next one slides over it.
+    const stepCards = gsap.utils.toArray<HTMLElement>('.step-card')
+    stepCards.slice(0, -1).forEach((card, i) => gsap.to(card, {
+      scale: .9 + i * .03, '--dim': .5, ease: 'none',
+      scrollTrigger: { trigger: stepCards[i + 1].parentElement, start: 'top 80%', end: 'top 25%', scrub: true },
+    }))
+    // Each step's illustration turns a little as it arrives.
+    stepCards.forEach(card => gsap.fromTo(card.querySelector('.step-art'), { rotate: -18, scale: .8 }, { rotate: 0, scale: 1, ease: 'none', scrollTrigger: { trigger: card, start: 'top bottom', end: 'top 45%', scrub: true } }))
+    // The map zooms gently into the neighbourhood as it scrolls in.
+    gsap.fromTo('.demo-map', { scale: 1.18 }, { scale: 1, ease: 'none', transformOrigin: '50% 60%', scrollTrigger: { trigger: '.location-map', start: 'top bottom', end: 'center center', scrub: true } })
     // The clinic clock spins through the hours as the section passes.
     gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: { trigger: '.clinic-section', start: 'top bottom', end: 'bottom top', scrub: .8 } })
       .fromTo('.cc-m', { rotate: 0, svgOrigin: '100 100' }, { rotate: 1080, svgOrigin: '100 100' }, 0)
@@ -193,10 +215,41 @@ export function startFx(): () => void {
         const r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height
         el.style.setProperty('--rx', `${(.5 - y) * 10}deg`); el.style.setProperty('--ry', `${(x - .5) * 12}deg`)
         el.style.setProperty('--gx', `${x * 100}%`); el.style.setProperty('--gy', `${y * 100}%`)
+        el.style.setProperty('--tx', (x - .5).toFixed(3)); el.style.setProperty('--ty', (y - .5).toFixed(3))
         el.classList.add('is-tilting')
       }))
-      on(el, 'pointerleave', () => { el.classList.remove('is-tilting'); el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg'); cool(el) })
+      on(el, 'pointerleave', () => { el.classList.remove('is-tilting'); ['--rx', '--ry'].forEach(v => el.style.setProperty(v, '0deg')); ['--tx', '--ty'].forEach(v => el.style.setProperty(v, '0')); cool(el) })
     })
+
+    // Spotlight cards: a glow follows the pointer along the border and across the surface.
+    document.querySelectorAll<HTMLElement>('[data-spot]').forEach(el => on(el, 'pointermove', perFrame((e: PointerEvent) => {
+      const r = el.getBoundingClientRect()
+      el.style.setProperty('--sx', `${e.clientX - r.left}px`); el.style.setProperty('--sy', `${e.clientY - r.top}px`)
+    })))
+
+    // Cursor companion: an orange ring trails the pointer and changes with what is under it
+    // (grows on links, turns into a heart over the pets, shrinks on press). The native cursor stays.
+    const ring = document.createElement('div'), dot = document.createElement('div')
+    ring.className = 'cursor-ring'; ring.innerHTML = `<i></i><span>${HEART}</span>`; dot.className = 'cursor-dot'
+    document.body.append(ring, dot)
+    let mx = -100, my = -100, rx = mx, ry = my, craf = 0
+    const follow = () => {
+      rx += (mx - rx) * .18; ry += (my - ry) * .18
+      ring.style.translate = `${rx}px ${ry}px`
+      craf = Math.abs(mx - rx) + Math.abs(my - ry) > .2 ? requestAnimationFrame(follow) : 0
+    }
+    on(window, 'pointermove', (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return
+      mx = e.clientX; my = e.clientY; dot.style.translate = `${mx}px ${my}px`
+      const t = e.target as Element
+      ring.dataset.state = t.closest('.pet-stage') ? 'pet' : t.closest('a,button') ? 'link' : t.closest('[data-tilt]') ? 'card' : ''
+      document.body.classList.add('has-cursor')
+      if (!craf) craf = requestAnimationFrame(follow)
+    }, { passive: true })
+    on(document, 'pointerleave', () => document.body.classList.remove('has-cursor'))
+    on(window, 'pointerdown', () => ring.classList.add('is-down'))
+    on(window, 'pointerup', () => ring.classList.remove('is-down'))
+    off.push(() => { cancelAnimationFrame(craf); ring.remove(); dot.remove(); document.body.classList.remove('has-cursor') })
 
     // Mouse parallax on the hero decor: --mouse-x/--mouse-y (-1..1) eased toward the pointer, loop sleeps when settled.
     if (hero) {

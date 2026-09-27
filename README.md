@@ -10,7 +10,17 @@ Landing page **demonstrativa** de uma clínica veterinária 24 horas com pet sho
 
 ## Sobre
 
-Página com hero animado (os três pets espiam sobre a plaquinha e reagem ao mouse com coraçõezinhos), abas de cuidados, manifesto com números, depoimentos em cartões deslizáveis, mapa ilustrado com a rota se desenhando e contato. Feita com foco em movimento suave e responsividade (desktop, tablet e celular).
+Página com foco em movimento suave e responsividade (desktop, tablet e celular):
+
+- **Hero** com os três pets espiando sobre a plaquinha, reagindo ao mouse com coraçõezinhos, e uma luz que acompanha o cursor.
+- **Parallax** de profundidade nos elementos decorativos, colunas do manifesto que deslizam uma contra a outra e mapa que dá zoom ao rolar.
+- **Cards bento de diferenciais** com borda luminosa que segue o mouse, inclinação 3D com profundidade e animações próprias (radar do plantão, notificações, órbita, ícones em onda).
+- **Palavras gigantes** que correm em direções opostas conforme o scroll.
+- **Como funciona** em cards que grudam na tela e se empilham.
+- **Cursor companheiro** (só em mouse): cresce nos links e vira coração sobre os pets.
+- Abas de cuidados, depoimentos em cartões deslizáveis, mapa ilustrado com a rota se desenhando e contato.
+
+Tudo respeita `prefers-reduced-motion`: com movimento reduzido, o conteúdo aparece estático.
 
 ## Usar com um cliente real
 

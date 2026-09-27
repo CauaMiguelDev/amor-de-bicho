@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { ArrowDown, ArrowRight, ArrowUpRight, Check, Clock as ClockIcon, Copy, Heart, Instagram, MapPin, MessageCircle, MoonStar, Navigation, PawPrint, Phone, ShieldCheck, ShoppingBag, Sparkles, Star, Stethoscope, Sun, Syringe } from 'lucide-react'
+import { ArrowDown, ArrowRight, ArrowUpRight, Camera, Cat, Check, CheckCheck, Clock as ClockIcon, Copy, Heart, HeartHandshake, Instagram, MapPin, MessageCircle, MoonStar, Navigation, PawPrint, Phone, ShieldCheck, ShoppingBag, Sparkles, Star, Stethoscope, Sun, Syringe } from 'lucide-react'
 import './style.css'
 import { startFx } from './fx'
 import { brand, fullAddress, reviews, reviewTopics } from './brand'
@@ -119,6 +119,11 @@ function App() {
     { title: 'Vacinas e prevenção', icon: Syringe, text: 'Prevenir também é uma forma de dizer “eu te amo”.', detail: 'Vacinas, vermifugação e orientação para cada fase da vida. A carteirinha fica em dia e a gente lembra junto com você das próximas doses.', action: 'Falar com a equipe', href: talk },
     { title: 'Pet shop e banho', icon: ShoppingBag, text: 'Mais cuidado para os pequenos momentos do dia a dia.', detail: 'Rações, petiscos, acessórios e banho e tosa no mesmo endereço da clínica. Seu pet sai cheiroso, e você sai tranquilo.', action: 'Consultar a equipe', href: talk },
   ]
+  const steps = [
+    { title: 'Você chama.', icon: Phone, text: 'Ligue ou mande mensagem, de dia ou de madrugada. A equipe já orienta o que fazer antes de você sair de casa.' },
+    { title: 'A gente recebe.', icon: Stethoscope, text: 'Triagem logo na chegada, prioridade para emergências e um veterinário explicando cada passo, sem pressa.' },
+    { title: 'O cuidado continua.', icon: HeartHandshake, text: 'Notícias enquanto ele está com a gente, retorno agendado e lembrete das próximas vacinas.' },
+  ]
   const go = (i: number) => setReview(r => { const next = (i + reviews.length) % reviews.length; return next === r.i ? r : { i: next, out: r.i } })
   const daytime = now.h >= 6 && now.h < 18
 
@@ -127,7 +132,7 @@ function App() {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target) } })
     }, { threshold: .12 })
-    document.querySelectorAll('.reveal').forEach(element => observer.observe(element))
+    document.querySelectorAll('.reveal, [data-reveal]').forEach(element => observer.observe(element))
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight
       if (progress.current) progress.current.style.transform = `translateX(${(max > 0 ? window.scrollY / max : 0) * 100 - 100}%)`
@@ -198,7 +203,7 @@ function App() {
 
     <main id="conteudo">
       <section className="hero" aria-labelledby="hero-title">
-        <div className="hero-floaters" aria-hidden="true">{Array.from({ length: 8 }, (_, i) => i % 2 ? <Heart key={i} fill="currentColor" strokeWidth={0} /> : <PawPrint key={i} />)}</div>
+        <div className="hero-glow" aria-hidden="true" /><div className="hero-floaters" aria-hidden="true" data-speed="1.4">{Array.from({ length: 8 }, (_, i) => i % 2 ? <Heart key={i} fill="currentColor" strokeWidth={0} /> : <PawPrint key={i} />)}</div>
         <div className="hero-copy">
           <h1 id="hero-title"><span className="word-line">Amor que cuida.</span><span className="word-line">A <em>qualquer<svg className="scribble" viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path pathLength={1} d="M4 14C38 7 78 5 118 8s62 7 78-2" /></svg></em> hora<span className="orange-period">.</span></span></h1>
           <p>Para eles, somos o mundo.<br className="mobile-break" /> Por eles, estamos aqui. <strong>24 horas.</strong></p>
@@ -219,7 +224,7 @@ function App() {
           <span>E a gente está aqui, como em qualquer hora.</span>
           <span className="open-label"><i className="live-dot" /> Aberto 24h, todos os dias</span>
         </div>
-        <PawPrint className="hero-paw" size={30} aria-hidden="true" /><Heart className="hero-heart" size={29} aria-hidden="true" />
+        <PawPrint className="hero-paw" size={30} aria-hidden="true" data-speed=".9" /><Heart className="hero-heart" size={29} aria-hidden="true" data-speed="1.2" />
 
         <div className="pet-triptych" aria-label="Cães e gatos, nossos melhores amigos">
           <Pet pet={pets.dachshund} className="pet-left"><div className="pet-caption"><span className="caption-icon"><Heart size={21} /></span><span>Pequenos amigos.<br /><strong>Um amor gigante.</strong></span></div></Pet>
@@ -234,13 +239,48 @@ function App() {
         <div className="section-heading reveal"><h2>Todo cuidado começa<br />com um pouco de <em>amor.</em></h2><p>Da rotina aos momentos inesperados,{' '}<br />seu melhor amigo merece atenção de verdade.</p></div>
         <div className="care-layout reveal">
           <div className="care-choices" ref={choices}><span className="care-pill" aria-hidden="true" />{care.map((item, i) => <button key={item.title} className={`care-choice ${activeCare === i ? 'is-active' : ''}`} aria-expanded={activeCare === i} aria-controls="care-detail" onClick={() => setActiveCare(i)}><item.icon size={25} /><span>{item.title}</span><ArrowUpRight className="care-choice-arrow" size={23} /></button>)}</div>
-          <div className="care-detail" data-tilt id="care-detail" role="region" aria-label={care[activeCare].title} aria-live="polite"><div className="care-detail-copy" key={activeCare}><div className="care-detail-symbol">{React.createElement(care[activeCare].icon)}</div><h3>{care[activeCare].text}</h3><p>{care[activeCare].detail}</p><a className="text-link" href={care[activeCare].href}>{care[activeCare].action}<Swap><ArrowUpRight size={18} /></Swap></a></div><PawPrint className="detail-paw" aria-hidden="true" /></div>
+          <div className="care-detail" data-tilt data-spot id="care-detail" role="region" aria-label={care[activeCare].title} aria-live="polite"><div className="care-detail-copy" key={activeCare}><div className="care-detail-symbol">{React.createElement(care[activeCare].icon)}</div><h3>{care[activeCare].text}</h3><p>{care[activeCare].detail}</p><a className="text-link" href={care[activeCare].href}>{care[activeCare].action}<Swap><ArrowUpRight size={18} /></Swap></a></div><PawPrint className="detail-paw" aria-hidden="true" /></div>
         </div>
       </section>
 
+      <section className="perks-section section-pad" id="diferenciais">
+        <div className="section-heading reveal"><h2>Pequenos detalhes.{' '}<br /><em>Grande diferença.</em></h2><p data-speed=".25">O que faz o tutor voltar{' '}<br />e o pet sair abanando o rabo.</p></div>
+        <div className="bento">
+          <article className="perk perk-night" data-tilt data-spot data-reveal style={{ '--d': '0s' } as React.CSSProperties}>
+            <div className="perk-visual radar" aria-hidden="true"><i /><i /><i /><span className="radar-core"><MoonStar size={30} strokeWidth={1.6} /></span></div>
+            <span className="perk-chip"><i className="live-dot" /> Aberto agora · <time>{now.label}</time></span>
+            <h3>Plantão de verdade,{' '}<br />a noite toda.</h3>
+            <p>Tem veterinário na clínica de madrugada, não só de sobreaviso. Chegou, foi atendido.</p>
+          </article>
+          <article className="perk perk-news" data-tilt data-spot data-reveal style={{ '--d': '.1s' } as React.CSSProperties}>
+            <div className="perk-visual notes" aria-hidden="true">
+              <span><Camera size={15} /> Foto nova da Mel</span>
+              <span><CheckCheck size={15} /> Medicação das 14h ok</span>
+              <span><PawPrint size={15} /> Pronta para voltar pra casa</span>
+            </div>
+            <h3>Notícias enquanto ele está com a gente.</h3>
+            <p>Na internação ou no banho, você acompanha com fotos e atualizações pelo WhatsApp.</p>
+          </article>
+          <article className="perk perk-cat" data-tilt data-spot data-reveal style={{ '--d': '.2s' } as React.CSSProperties}>
+            <div className="perk-visual orbit" aria-hidden="true"><span className="orbit-ring"><PawPrint className="orbit-paw" size={14} /></span><Cat size={34} strokeWidth={1.5} /></div>
+            <h3>Cantinho só para gatos.</h3>
+            <p>Sala separada e silenciosa, longe dos latidos.</p>
+          </article>
+          <article className="perk perk-all" data-tilt data-spot data-reveal style={{ '--d': '.3s' } as React.CSSProperties}>
+            <div className="perk-visual tiles" aria-hidden="true">{[Stethoscope, Syringe, Sparkles, ShoppingBag].map((Icon, i) => <span key={i} style={{ '--i': i } as React.CSSProperties}><Icon size={20} strokeWidth={1.6} /></span>)}</div>
+            <h3>Tudo num endereço só.</h3>
+            <p>Consulta, vacina, banho e ração sem atravessar a cidade.</p>
+          </article>
+        </div>
+      </section>
+
+      <div className="big-words" aria-hidden="true">
+        {[['cuidado', 'carinho', '24 horas', 'atenção'], ['amor', 'paciência', 'confiança', 'sem pressa']].map((words, row) => <div className="big-line" data-dir={row ? 1 : -1} key={row}>{[...words, ...words].map((w, i) => <span key={i} className={i % 2 ? 'is-italic' : ''}>{w}<PawPrint className="big-paw" /></span>)}</div>)}
+      </div>
+
       <section className="clinic-section section-pad rise" id="clinica">
         <svg className="clinic-clock" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="96" />{Array.from({ length: 60 }, (_, i) => <line key={i} x1="100" y1="8" x2="100" y2={i % 5 ? 13 : 20} transform={`rotate(${i * 6} 100 100)`} />)}<line className="cc-h" x1="100" y1="100" x2="100" y2="52" /><line className="cc-m" x1="100" y1="100" x2="100" y2="24" /><circle className="cc-pin" cx="100" cy="100" r="5" /></svg>
-        <div className="clinic-statement reveal"><span className="clinic-heart"><Heart size={38} strokeWidth={1.3} /></span><h2>Seu pet não sabe<br />ver as horas.<br /><em>Mas sabe quem ama.</em></h2></div>
+        <div className="clinic-statement reveal"><span className="clinic-heart" data-speed=".6"><Heart size={38} strokeWidth={1.3} /></span><h2>Seu pet não sabe<br />ver as horas.<br /><em>Mas sabe quem ama.</em></h2></div>
         <div className="clinic-story reveal">
           <p className="large-copy">E quando ele precisa, estar por perto faz toda a diferença.</p>
           <p>Somos a {brand.name}, pet shop e clínica veterinária 24 horas. Um endereço para cuidar da saúde e do bem-estar de quem é parte da família, da primeira vacina aos cuidados de um companheiro de muitos anos.</p>
@@ -250,6 +290,19 @@ function App() {
             <div><dt>4 em 1</dt><dd>clínica, vacinas, banho e pet shop</dd></div>
           </dl>
           <div className="clinic-signoff"><PawPrint size={23} /><span>De quem ama bichos.<br /><strong>Para quem também ama.</strong></span></div>
+        </div>
+      </section>
+
+      <section className="steps-section section-pad" id="como-funciona">
+        <div className="section-heading reveal"><h2>Do primeiro contato{' '}<br />ao <em>abanar do rabo.</em></h2><p data-speed=".25">Três passos simples,{' '}<br />a qualquer hora do dia ou da noite.</p></div>
+        <div className="steps">
+          {steps.map((step, i) => <article className={`step step-${i + 1}`} key={step.title} style={{ '--i': i } as React.CSSProperties}>
+            <div className="step-card">
+              <span className="step-num" aria-hidden="true">0{i + 1}</span>
+              <div className="step-copy"><small>Passo {i + 1} de {steps.length}</small><h3>{step.title}</h3><p>{step.text}</p></div>
+              <div className="step-art" aria-hidden="true"><span className="step-ring" /><span className="step-ring" /><step.icon size={46} strokeWidth={1.4} /></div>
+            </div>
+          </article>)}
         </div>
       </section>
 
