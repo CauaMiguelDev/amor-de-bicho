@@ -1,35 +1,30 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { ArrowDown, ArrowRight, ArrowUpRight, Award, Check, Clock as ClockIcon, Copy, Heart, Instagram, Link as LinkIcon, MapPin, MessageCircle, MoonStar, Navigation, PawPrint, Phone, ShieldCheck, ShoppingBag, Star, Stethoscope, Sun, Syringe } from 'lucide-react'
+import { ArrowDown, ArrowRight, ArrowUpRight, Check, Clock as ClockIcon, Copy, Heart, Instagram, MapPin, MessageCircle, MoonStar, Navigation, PawPrint, Phone, ShieldCheck, ShoppingBag, Sparkles, Star, Stethoscope, Sun, Syringe } from 'lucide-react'
 import './style.css'
 import { startFx } from './fx'
+import { brand, fullAddress, reviews, reviewTopics } from './brand'
 
-const phone = 'tel:+556130463056'
-const address = 'St. M QNM 19 casa 25 - Ceilândia, Brasília - DF, 72215-205'
-const maps = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Amor de Bicho PET SHOP E Clínica Veterinária 24 HORAS ' + address)
-const route = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent('Amor de Bicho ' + address)
-const instagram = 'https://www.instagram.com/amordebicho.pet/'
-const linktree = 'https://linktr.ee/amordebichopetshopeconsultorio'
-const talk = linktree // "conversar" CTAs open the clinic's official hub (WhatsApp lives there)
-const ext = { target: '_blank', rel: 'noreferrer' } as const
+const phone = brand.phone.href
+const talk = brand.links.talk
 const imageRoot = 'https://polo-pecan-73837341.figma.site/_assets/v11/'
+const score = brand.rating.score.toLocaleString('pt-BR', { minimumFractionDigits: 1 })
 
 // line: where the green board starts, as % of the photo's height (measured from the PNGs).
 // board: the board's flat colour, painted behind/over the photo so the pet can duck behind it.
 const pets = {
-  dachshund: { src: imageRoot + '8d44b25186ef45a5789c74668fb781cea4e1ff49.png', w: 870, h: 762, line: 50.13, board: '#a7e8b0', alt: 'Cachorrinho dachshund com as patas apoiadas em um painel verde', says: ['Oi!', 'Au au!', 'Carinho?'] },
-  golden: { src: imageRoot + '96745c4e72ad5c5208e53a885df797fd82cd854a.png?h=1024', w: 977, h: 1024, line: 67.01, board: '#003907', alt: 'Golden retriever sorridente com as patas sobre um painel verde-escuro', says: ['Au!', 'Oi, humano!', 'Au au!'] },
-  cat: { src: imageRoot + '81bd2e7a66b58f3d8f3ad78fd1ebf01af8dfdee1.png', w: 870, h: 816, line: 53.43, board: '#a7e8b0', alt: 'Gatinho laranja curioso espiando por cima de um painel verde', says: ['Miau!', 'Prrr…', 'Miau?'] },
+  dachshund: { src: imageRoot + '8d44b25186ef45a5789c74668fb781cea4e1ff49.png', w: 870, h: 762, line: 50.13, board: '#a7e8b0', alt: 'Cachorrinho dachshund com as patas apoiadas em um painel verde' },
+  golden: { src: imageRoot + '96745c4e72ad5c5208e53a885df797fd82cd854a.png?h=1024', w: 977, h: 1024, line: 67.01, board: '#003907', alt: 'Golden retriever sorridente com as patas sobre um painel verde-escuro' },
+  cat: { src: imageRoot + '81bd2e7a66b58f3d8f3ad78fd1ebf01af8dfdee1.png', w: 870, h: 816, line: 53.43, board: '#a7e8b0', alt: 'Gatinho laranja curioso espiando por cima de um painel verde' },
 }
 type PetData = typeof pets.cat
 
-function Pet({ pet, className, says = pet.says, decorative = false, children }: { pet: PetData; className: string; says?: string[]; decorative?: boolean; children?: React.ReactNode }) {
+function Pet({ pet, className, decorative = false, children }: { pet: PetData; className: string; decorative?: boolean; children?: React.ReactNode }) {
   return <div className={`pet-panel ${className}`} style={{ '--line': pet.line + '%', '--board': pet.board } as React.CSSProperties}>
-    <div className="pet-stage" data-says={says.join('|')}>
+    <div className="pet-stage">
       <img src={pet.src} alt={decorative ? '' : pet.alt} width={pet.w} height={pet.h} draggable={false} loading={decorative ? 'lazy' : undefined} fetchPriority={decorative ? undefined : 'high'} />
       <span className="pet-cover" />
     </div>
-    <span className="pet-bubble" aria-hidden="true" />
     {children}
   </div>
 }
@@ -40,23 +35,23 @@ function Swap({ children, dir = 'diag', className = '' }: { children: React.Reac
 }
 
 function Logo({ light = false }: { light?: boolean }) {
-  return <a className={`logo ${light ? 'logo-light' : ''}`} href="#inicio" aria-label="Amor de Bicho, início">
+  return <a className={`logo ${light ? 'logo-light' : ''}`} href="#inicio" aria-label={`${brand.name}, início`}>
     <span className="logo-mark"><PawPrint strokeWidth={1.7} /><Heart className="logo-heart" fill="currentColor" /></span>
-    <span className="logo-type">amor de bicho<span>CLÍNICA VETERINÁRIA & PET SHOP</span></span>
+    <span className="logo-type">{brand.wordmark}<span>{brand.descriptor}</span></span>
   </a>
 }
 
-function Stars() {
-  return <span className="stars" aria-hidden="true">{Array.from({ length: 5 }, (_, i) => <Star key={i} size={14} fill="currentColor" strokeWidth={0} />)}</span>
+function Stars({ size = 14 }: { size?: number }) {
+  return <span className="stars" aria-hidden="true">{Array.from({ length: 5 }, (_, i) => <Star key={i} size={size} fill="currentColor" strokeWidth={0} />)}</span>
 }
 
-function brasiliaNow() {
-  const p = Object.fromEntries(new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map(x => [x.type, x.value]))
+function clinicNow() {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('pt-BR', { timeZone: brand.timeZone, hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map(x => [x.type, x.value]))
   return { h: +p.hour, m: +p.minute, s: +p.second, label: `${p.hour}:${p.minute}` }
 }
 
-// Hands start at the current Brasília time; CSS keeps them turning from there.
-function Clock({ start }: { start: ReturnType<typeof brasiliaNow> }) {
+// Hands start at the current local time; CSS keeps them turning from there.
+function Clock({ start }: { start: ReturnType<typeof clinicNow> }) {
   const a = { h: (start.h % 12 + start.m / 60) * 30, m: (start.m + start.s / 60) * 6, s: start.s * 6 }
   return <svg className="clock" viewBox="0 0 64 64" aria-hidden="true">
     <circle className="clock-face" cx="32" cy="32" r="29" />
@@ -68,13 +63,49 @@ function Clock({ start }: { start: ReturnType<typeof brasiliaNow> }) {
   </svg>
 }
 
+// Illustrated neighbourhood map (the demo address is fictional, so no real map is embedded).
+// The route draws itself when the section appears; `run` remounts it to replay the drawing.
+const mapX = [0, 150, 330, 470, 640, 800], mapY = [0, 140, 300, 430, 560]
+const cellKind = (i: number, j: number) => i === 1 && j === 1 ? 'park' : i === 4 && j === 0 ? 'water' : 'block'
+function DemoMap({ run }: { run: number }) {
+  return <svg className="demo-map" viewBox="0 0 800 560" preserveAspectRatio="xMinYMid slice" role="img" aria-label={`Mapa ilustrativo: a clínica fica na ${brand.address.street}, ${brand.address.district}`}>
+    <rect width="800" height="560" className="map-land" />
+    {mapX.slice(0, -1).flatMap((x, i) => mapY.slice(0, -1).map((y, j) => {
+      // Blocks sit 13 units off each street's centre line; the avenue at y=300 is 6 units wider.
+      const kind = cellKind(i, j), pad = 13, w = mapX[i + 1] - x, h = mapY[j + 1] - y
+      if (kind === 'water') return <path key="water" className="map-water" d="M660 0H800V118C760 132 700 120 676 92 658 70 654 30 660 0Z" />
+      return <rect key={`${i}-${j}`} className={`map-${kind}`} x={x + pad} y={y + (j === 2 ? pad + 6 : pad)} width={w - pad * 2} height={h - pad * 2 - (j === 1 ? 6 : 0)} rx="14" />
+    }))}
+    {[[188, 178], [292, 178], [186, 258], [294, 258], [240, 266]].map(([cx, cy]) => <circle key={cx + '-' + cy} className="map-tree" cx={cx} cy={cy} r="15" />)}
+    <g className="map-streets">
+      {mapX.slice(1, -1).map(x => <line key={x} x1={x} y1="0" x2={x} y2="560" />)}
+      {mapY.slice(1, -1).filter(y => y !== 300).map(y => <line key={y} x1="0" y1={y} x2="800" y2={y} />)}
+      <line className="map-avenue" x1="0" y1="300" x2="800" y2="300" />
+    </g>
+    <text className="map-label" x="560" y="304" textAnchor="middle">AV. PRIMAVERA</text>
+    <text className="map-label" x="474" y="220" textAnchor="middle" transform="rotate(-90 474 220)">RUA DAS ACÁCIAS</text>
+    <text className="map-label map-label-park" x="240" y="196" textAnchor="middle">PRAÇA</text>
+    <g key={run}>
+      <path className="map-route map-route-casing" pathLength={1} d="M150 232V300H470V372" />
+      <path className="map-route" pathLength={1} d="M150 232V300H470V372" />
+    </g>
+    <g className="map-you"><circle className="map-you-ring" cx="150" cy="232" r="10" /><circle cx="150" cy="232" r="8" /><text x="168" y="226">você</text></g>
+    <ellipse className="map-pin-shadow" cx="470" cy="383" rx="11" ry="4" />
+    <g className="map-pin">
+      <path d="M470 380c-5-12-26-24-26-44a26 26 0 0 1 52 0c0 20-21 32-26 44Z" />
+      <g transform="translate(459 324) scale(.92)" className="map-pin-paw"><circle cx="5.5" cy="10" r="2.2" /><circle cx="9.5" cy="5.5" r="2.2" /><circle cx="14.5" cy="5.5" r="2.2" /><circle cx="18.5" cy="10" r="2.2" /><path d="M12 11c-3.5 0-6.5 4.2-6.5 6.8 0 2 1.6 2.7 3.3 2.2 1.2-.4 2.2-.9 3.2-.9s2 .5 3.2.9c1.7.5 3.3-.2 3.3-2.2C18.5 15.2 15.5 11 12 11Z" /></g>
+    </g>
+  </svg>
+}
+
 function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [activeCare, setActiveCare] = useState(0)
   const [review, setReview] = useState({ i: 0, out: -1 })
   const [reviewPaused, setReviewPaused] = useState(false)
-  const [clockStart] = useState(brasiliaNow)
+  const [routeRun, setRouteRun] = useState(0)
+  const [clockStart] = useState(clinicNow)
   const [now, setNow] = useState(clockStart)
   const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const progress = useRef<HTMLDivElement>(null)
@@ -83,18 +114,10 @@ function App() {
   const drag = useRef<number | null>(null)
 
   const care = [
-    { title: 'Clínica veterinária', icon: Stethoscope, text: 'Um lugar para cuidar de quem faz parte da sua família.', detail: 'Converse com a equipe sobre consultas, acompanhamento e os cuidados que seu pet precisa. Você encontra a Amor de Bicho bem aqui, em Ceilândia.', action: 'Falar com a clínica', href: talk },
-    { title: 'Atendimento 24 horas', icon: MoonStar, text: 'De dia, de noite. Quando o seu melhor amigo precisar.', detail: 'A clínica funciona 24 horas, todos os dias. Se seu pet precisa de atendimento, ligue para a equipe ou abra as rotas para chegar até nós.', action: 'Ligar agora', href: phone },
-    { title: 'Pet shop', icon: ShoppingBag, text: 'Mais cuidado para os pequenos momentos do dia a dia.', detail: 'Saúde e bem-estar no mesmo endereço. Entre em contato para conhecer os produtos disponíveis e confirmar o horário de atendimento do pet shop.', action: 'Consultar a equipe', href: talk },
-  ]
-  const highlight = { name: 'Destaque das avaliações', initial: 'G', color: 'google', label: 'Trecho em destaque no Google' }
-  const reviews = [
-    { name: 'Lerianne Moreira', initial: 'L', color: 'rose', label: 'Trecho da avaliação no Google', text: 'Tivemos uma experiência extremamente positiva com a clínica veterinária AMOR DE BICHO no atendimento à nossa cadela Nina, uma maltês, que foi acompanhada com muito zelo, carinho e atenção desde a primeira consulta até o pós-operatório.' },
-    { ...highlight, text: 'Clínica com estrutura e qualidade excelente no serviço prestado!' },
-    { name: 'Claudia Magalhaes', initial: 'C', color: 'sage', label: 'Trecho da avaliação no Google', text: 'Excelente atendimento da minha cachorrinha Maya. Médicas competentes, cuidadosas sobre os procedimentos a serem realizados, e atenciosas para explicar sobre o que seria feito. Recomendo muito!' },
-    { ...highlight, text: 'Muito boa, os atendentes e os médicos, são bastante atenciosos!' },
-    { name: 'Andressa AO', initial: 'A', color: 'lavender', label: 'Trecho da avaliação no Google', text: 'Minha experiência com o pós-operatório do meu gato de 13 anos nesta clínica foi extremamente frustrante. E por isso não quis nem discutir na hora e só retirei da clínica e levei pra outra após 6 dias de operação.' },
-    { ...highlight, text: 'Todas as vezes que levei meu cachorro foi muito bem atendido e sem enrolação.' },
+    { title: 'Consultas e exames', icon: Stethoscope, text: 'Um lugar para cuidar de quem faz parte da sua família.', detail: 'Check-ups, consultas e exames com uma equipe que explica cada passo, sem pressa. Do primeiro filhote ao companheiro de muitos anos.', action: 'Agendar uma consulta', href: talk },
+    { title: 'Atendimento 24 horas', icon: MoonStar, text: 'De dia, de noite. Quando o seu melhor amigo precisar.', detail: 'Plantão todos os dias, inclusive feriados. Numa emergência, ligue antes de sair de casa: a equipe já se prepara para receber vocês.', action: 'Ligar agora', href: phone },
+    { title: 'Vacinas e prevenção', icon: Syringe, text: 'Prevenir também é uma forma de dizer “eu te amo”.', detail: 'Vacinas, vermifugação e orientação para cada fase da vida. A carteirinha fica em dia e a gente lembra junto com você das próximas doses.', action: 'Falar com a equipe', href: talk },
+    { title: 'Pet shop e banho', icon: ShoppingBag, text: 'Mais cuidado para os pequenos momentos do dia a dia.', detail: 'Rações, petiscos, acessórios e banho e tosa no mesmo endereço da clínica. Seu pet sai cheiroso, e você sai tranquilo.', action: 'Consultar a equipe', href: talk },
   ]
   const go = (i: number) => setReview(r => { const next = (i + reviews.length) % reviews.length; return next === r.i ? r : { i: next, out: r.i } })
   const daytime = now.h >= 6 && now.h < 18
@@ -109,7 +132,7 @@ function App() {
       const max = document.documentElement.scrollHeight - window.innerHeight
       if (progress.current) progress.current.style.transform = `translateX(${(max > 0 ? window.scrollY / max : 0) * 100 - 100}%)`
     }
-    const tick = setInterval(() => setNow(brasiliaNow()), 15000)
+    const tick = setInterval(() => setNow(clinicNow()), 15000)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => { stopFx(); observer.disconnect(); clearInterval(tick); window.removeEventListener('scroll', onScroll); clearTimeout(copyTimer.current) }
   }, [])
@@ -140,8 +163,8 @@ function App() {
   }, [activeCare])
 
   async function copyAddress() {
-    try { await navigator.clipboard.writeText(address); setCopied(true); clearTimeout(copyTimer.current); copyTimer.current = setTimeout(() => setCopied(false), 3000) }
-    catch { window.open(maps, '_blank', 'noopener,noreferrer') }
+    try { await navigator.clipboard.writeText(fullAddress); setCopied(true); clearTimeout(copyTimer.current); copyTimer.current = setTimeout(() => setCopied(false), 3000) }
+    catch { window.prompt('Copie o endereço:', fullAddress) }
   }
 
   // Swipe the review deck (touch or mouse drag).
@@ -156,6 +179,8 @@ function App() {
     },
   }
 
+  const navLinks = [['Nossos cuidados', '#cuidados'], ['A clínica', '#clinica'], ['Avaliações', '#avaliacoes'], ['Onde estamos', '#localizacao']]
+
   return <>
     <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
     <div className="reading-progress" ref={progress}><PawPrint size={14} /></div>
@@ -163,10 +188,10 @@ function App() {
       <div className="header-inner">
         <Logo />
         <nav className={menuOpen ? 'nav nav-open' : 'nav'} id="main-nav" aria-label="Navegação principal">
-          {[['Nossos cuidados', '#cuidados'], ['A clínica', '#clinica'], ['Avaliações', '#avaliacoes'], ['Onde estamos', '#localizacao']].map(([label, href], i) => <a href={href} key={href} style={{ '--i': i } as React.CSSProperties} onClick={() => setMenuOpen(false)}><span className="roll"><span data-text={label}>{label}</span></span></a>)}
-          <a href={phone} className="mobile-nav-call" style={{ '--i': 4 } as React.CSSProperties}><Phone size={16} /> (61) 3046-3056</a>
+          {navLinks.map(([label, href], i) => <a href={href} key={href} style={{ '--i': i } as React.CSSProperties} onClick={() => setMenuOpen(false)}><span className="roll"><span data-text={label}>{label}</span></span></a>)}
+          <a href={phone} className="mobile-nav-call" style={{ '--i': 4 } as React.CSSProperties}><Phone size={16} /> {brand.phone.label}</a>
         </nav>
-        <a className="header-call" href={talk} {...ext}><MessageCircle size={16} /><span>Fale com a gente</span><Swap><ArrowUpRight size={17} /></Swap></a>
+        <a className="header-call" href={talk}><MessageCircle size={16} /><span>Fale com a gente</span><Swap><ArrowUpRight size={17} /></Swap></a>
         <button className={`menu-toggle ${menuOpen ? 'is-open' : ''}`} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen} aria-controls="main-nav" onClick={() => setMenuOpen(!menuOpen)}><span /><span /></button>
       </div>
     </header>
@@ -177,75 +202,83 @@ function App() {
         <div className="hero-copy">
           <h1 id="hero-title"><span className="word-line">Amor que cuida.</span><span className="word-line">A <em>qualquer<svg className="scribble" viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path pathLength={1} d="M4 14C38 7 78 5 118 8s62 7 78-2" /></svg></em> hora<span className="orange-period">.</span></span></h1>
           <p>Para eles, somos o mundo.<br className="mobile-break" /> Por eles, estamos aqui. <strong>24 horas.</strong></p>
-          <a className="button button-orange hero-cta hero-cta-flow" href={talk} {...ext}><MessageCircle size={17} /><span className="label">Conte com a gente</span><Swap className="button-arrow"><ArrowUpRight size={18} /></Swap></a>
+          <a className="button button-orange hero-cta hero-cta-flow" href={talk}><MessageCircle size={17} /><span className="label">Conte com a gente</span><Swap className="button-arrow"><ArrowUpRight size={18} /></Swap></a>
           <div className="hero-status">
-            <a className="status-pill" href={maps} target="_blank" rel="noreferrer"><span className="google-g">G</span><strong>4,4</strong><Star size={13} fill="currentColor" strokeWidth={0} /><span>407 avaliações</span></a>
+            <a className="status-pill" href="#avaliacoes"><Star size={14} fill="currentColor" strokeWidth={0} /><strong>{score}</strong><span>· {brand.rating.count} avaliações</span></a>
             <span className="status-pill"><i className="live-dot" /> Aberto agora · <time>{now.label}</time></span>
           </div>
         </div>
 
-        <a className="hero-rating" href={maps} target="_blank" rel="noreferrer">
-          <span className="rating-top"><span className="google-g">G</span><span className="rating-number"><span data-count="4.4">4,4</span><span>/5</span></span></span>
-          <Stars /><span><span data-count="407">407</span> avaliações no Google</span><span className="tiny-link">Histórias de quem confia <Swap><ArrowUpRight size={14} /></Swap></span>
+        <a className="hero-rating" href="#avaliacoes">
+          <span className="rating-top"><span className="rating-badge"><Heart size={17} fill="currentColor" strokeWidth={0} /></span><span className="rating-number"><span data-count={brand.rating.score}>{score}</span><span>/5</span></span></span>
+          <Stars /><span><span data-count={brand.rating.count}>{brand.rating.count}</span> avaliações de tutores</span><span className="tiny-link">Histórias de quem confia <Swap dir="y"><ArrowDown size={14} /></Swap></span>
         </a>
         <div className="hero-hours">
           <div className="hours-top"><Clock start={clockStart} />{daytime ? <Sun className="hours-sky" size={20} /> : <MoonStar className="hours-sky" size={19} />}</div>
           <strong>Agora são <time>{now.label}</time>.</strong>
           <span>E a gente está aqui, como em qualquer hora.</span>
-          <span className="open-label"><i className="live-dot" /> Aberto 24 horas · Ceilândia</span>
+          <span className="open-label"><i className="live-dot" /> Aberto 24h, todos os dias</span>
         </div>
         <PawPrint className="hero-paw" size={30} aria-hidden="true" /><Heart className="hero-heart" size={29} aria-hidden="true" />
 
         <div className="pet-triptych" aria-label="Cães e gatos, nossos melhores amigos">
           <Pet pet={pets.dachshund} className="pet-left"><div className="pet-caption"><span className="caption-icon"><Heart size={21} /></span><span>Pequenos amigos.<br /><strong>Um amor gigante.</strong></span></div></Pet>
-          <Pet pet={pets.golden} className="pet-center"><div className="board-cta"><a className="button button-orange hero-cta" href={talk} {...ext}><MessageCircle size={16} /><span className="label">Conte com a gente</span><Swap className="button-arrow"><ArrowUpRight size={17} /></Swap></a><a className="board-link" href="#cuidados">ou conheça nossos cuidados <Swap dir="y"><ArrowDown size={14} /></Swap></a></div></Pet>
+          <Pet pet={pets.golden} className="pet-center"><div className="board-cta"><a className="button button-orange hero-cta" href={talk}><MessageCircle size={16} /><span className="label">Conte com a gente</span><Swap className="button-arrow"><ArrowUpRight size={17} /></Swap></a><a className="board-link" href="#cuidados">ou conheça nossos cuidados <Swap dir="y"><ArrowDown size={14} /></Swap></a></div></Pet>
           <Pet pet={pets.cat} className="pet-right"><div className="pet-caption"><span className="caption-icon"><ShieldCheck size={21} /></span><span>Carinho em cada detalhe.<br /><strong>Cuidado em cada momento.</strong></span></div></Pet>
         </div>
       </section>
 
-      <div className="care-ribbon" aria-label="Clínica veterinária 24h, pet shop e cuidado com carinho"><div className="ribbon-track">{[0, 1].map(n => <div className="ribbon-content" key={n} aria-hidden={n === 1 ? true : undefined}><span><PawPrint /> Amor em cada cuidado</span><span><MoonStar /> Clínica veterinária 24h</span><span><Heart /> Pertinho de você, em Ceilândia</span><span><ShoppingBag /> Pet shop</span></div>)}</div></div>
+      <div className="care-ribbon" aria-label="Clínica veterinária 24h, vacinas, banho e tosa e pet shop"><div className="ribbon-track">{[0, 1].map(n => <div className="ribbon-content" key={n} aria-hidden={n === 1 ? true : undefined}><span><PawPrint /> Amor em cada cuidado</span><span><MoonStar /> Clínica veterinária 24h</span><span><Syringe /> Vacinas e prevenção</span><span><Sparkles /> Banho e tosa</span><span><ShoppingBag /> Pet shop</span><span><Heart /> Pertinho de você</span></div>)}</div></div>
 
       <section className="care-section section-pad" id="cuidados">
-        <div className="section-heading reveal"><h2>Todo cuidado começa<br />com um pouco de <em>amor.</em></h2><p>Da rotina aos momentos inesperados,<br />seu melhor amigo merece atenção de verdade.</p></div>
+        <div className="section-heading reveal"><h2>Todo cuidado começa<br />com um pouco de <em>amor.</em></h2><p>Da rotina aos momentos inesperados,{' '}<br />seu melhor amigo merece atenção de verdade.</p></div>
         <div className="care-layout reveal">
           <div className="care-choices" ref={choices}><span className="care-pill" aria-hidden="true" />{care.map((item, i) => <button key={item.title} className={`care-choice ${activeCare === i ? 'is-active' : ''}`} aria-expanded={activeCare === i} aria-controls="care-detail" onClick={() => setActiveCare(i)}><item.icon size={25} /><span>{item.title}</span><ArrowUpRight className="care-choice-arrow" size={23} /></button>)}</div>
-          <div className="care-detail" data-tilt id="care-detail" role="region" aria-label={care[activeCare].title} aria-live="polite"><div className="care-detail-copy" key={activeCare}><div className="care-detail-symbol">{React.createElement(care[activeCare].icon)}</div><h3>{care[activeCare].text}</h3><p>{care[activeCare].detail}</p><a className="text-link" href={care[activeCare].href} {...(care[activeCare].href.startsWith('http') ? ext : {})}>{care[activeCare].action}<Swap><ArrowUpRight size={18} /></Swap></a></div><PawPrint className="detail-paw" aria-hidden="true" /></div>
+          <div className="care-detail" data-tilt id="care-detail" role="region" aria-label={care[activeCare].title} aria-live="polite"><div className="care-detail-copy" key={activeCare}><div className="care-detail-symbol">{React.createElement(care[activeCare].icon)}</div><h3>{care[activeCare].text}</h3><p>{care[activeCare].detail}</p><a className="text-link" href={care[activeCare].href}>{care[activeCare].action}<Swap><ArrowUpRight size={18} /></Swap></a></div><PawPrint className="detail-paw" aria-hidden="true" /></div>
         </div>
       </section>
 
       <section className="clinic-section section-pad rise" id="clinica">
         <svg className="clinic-clock" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="96" />{Array.from({ length: 60 }, (_, i) => <line key={i} x1="100" y1="8" x2="100" y2={i % 5 ? 13 : 20} transform={`rotate(${i * 6} 100 100)`} />)}<line className="cc-h" x1="100" y1="100" x2="100" y2="52" /><line className="cc-m" x1="100" y1="100" x2="100" y2="24" /><circle className="cc-pin" cx="100" cy="100" r="5" /></svg>
         <div className="clinic-statement reveal"><span className="clinic-heart"><Heart size={38} strokeWidth={1.3} /></span><h2>Seu pet não sabe<br />ver as horas.<br /><em>Mas sabe quem ama.</em></h2></div>
-        <div className="clinic-story reveal"><p className="large-copy">E quando ele precisa, estar por perto faz toda a diferença.</p><p>Somos a Amor de Bicho, pet shop e clínica veterinária 24 horas em Ceilândia. Um endereço para quem quer cuidar da saúde e do bem-estar de um companheiro que é parte da família.</p><p>Uma empresa de empreendedoras, feita de gente que acredita que carinho e cuidado andam juntos.</p><div className="clinic-signoff"><PawPrint size={23} /><span>De quem ama bichos.<br /><strong>Para quem também ama.</strong></span></div></div>
+        <div className="clinic-story reveal">
+          <p className="large-copy">E quando ele precisa, estar por perto faz toda a diferença.</p>
+          <p>Somos a {brand.name}, pet shop e clínica veterinária 24 horas. Um endereço para cuidar da saúde e do bem-estar de quem é parte da família, da primeira vacina aos cuidados de um companheiro de muitos anos.</p>
+          <dl className="clinic-stats">
+            <div><dt>24h</dt><dd>todos os dias, até nos feriados</dd></div>
+            <div><dt><span data-count={brand.rating.score}>{score}</span></dt><dd>nota média dos tutores</dd></div>
+            <div><dt>4 em 1</dt><dd>clínica, vacinas, banho e pet shop</dd></div>
+          </dl>
+          <div className="clinic-signoff"><PawPrint size={23} /><span>De quem ama bichos.<br /><strong>Para quem também ama.</strong></span></div>
+        </div>
       </section>
 
       <section className="reviews-section section-pad rise" id="avaliacoes">
-        <div className="review-intro reveal"><h2>Quem ama,<br /><em>conta.</em></h2><p>Experiências reais de quem<br />já passou por aqui.</p><a className="google-review-summary" href={maps} target="_blank" rel="noreferrer"><span className="google-g">G</span><span><strong><span data-count="4.4">4,4</span> <span>/ 5</span></strong><small><span data-count="407">407</span> avaliações no Google</small></span><Swap><ArrowUpRight size={20} /></Swap></a><span className="rating-note">Nota e quantidade do perfil informado.</span><div className="review-tags" aria-label="Assuntos mais citados nas avaliações">{([['clínica', 46], ['carinho', 12], ['tratado', 10], ['internação', 10]] as const).map(([tag, n], i) => <span key={tag} style={{ '--i': i } as React.CSSProperties}>{tag}<b>{n}</b></span>)}</div></div>
+        <div className="review-intro reveal"><h2>Quem ama,{' '}<br /><em>conta.</em></h2><p>Histórias de quem já confiou{' '}<br />o melhor amigo à nossa equipe.</p><div className="review-summary"><span className="rating-badge rating-badge-lg"><Star size={20} fill="currentColor" strokeWidth={0} /></span><span><strong><span data-count={brand.rating.score}>{score}</span> <span>/ 5</span></strong><small><span data-count={brand.rating.count}>{brand.rating.count}</span> avaliações de tutores</small></span></div><span className="rating-note">Nota, números e depoimentos ilustrativos deste site demonstrativo.</span><div className="review-tags" aria-label="Assuntos mais citados nas avaliações">{reviewTopics.map(([tag, n], i) => <span key={tag} style={{ '--i': i } as React.CSSProperties}>{tag}<b>{n}</b></span>)}</div></div>
         <div className="review-feature reveal" onPointerEnter={() => setReviewPaused(true)} onPointerLeave={() => setReviewPaused(false)} onFocus={() => setReviewPaused(true)} onBlur={() => setReviewPaused(false)}>
           <div className="review-deck" ref={deck} aria-live={reviewPaused ? 'polite' : 'off'} {...deckHandlers} onPointerCancel={deckHandlers.onPointerUp}>
             {reviews.map((r, i) => {
               const off = (i - review.i + reviews.length) % reviews.length
               return <article key={r.text} className={`review-card ${i === review.out ? 'is-leaving' : ''}`} data-off={Math.min(off, 3)} aria-hidden={off !== 0}>
                 <span className="quote-mark" aria-hidden="true">“</span><blockquote>{r.text}</blockquote>
-                <div className="review-author"><span className={`review-avatar ${r.color}`}>{r.initial}</span><span><strong>{r.name}</strong><small>{r.label}</small></span><span className="google-g small-g" aria-label="Google">G</span></div>
+                <div className="review-author"><span className={`review-avatar ${r.color}`}>{r.initial}</span><span><strong>{r.name}</strong><small>{r.pet}</small></span><Stars size={13} /></div>
               </article>
             })}
           </div>
           <div className="review-timer" aria-hidden="true"><i key={review.i} className={reviewPaused ? 'paused' : ''} /></div>
           <div className="review-controls"><div className="review-dots" aria-label="Escolher avaliação">{reviews.map((r, i) => <button key={r.text} aria-label={`Ler avaliação ${i + 1} de ${reviews.length}`} aria-pressed={i === review.i} className={i === review.i ? 'active' : ''} onClick={() => go(i)} />)}</div><span className="swipe-hint" aria-hidden="true">arraste para o lado</span><button className="review-next" onClick={() => go(review.i + 1)} aria-label="Próxima avaliação"><Swap dir="x"><ArrowRight size={20} /></Swap></button></div>
-          <a className="all-reviews" href={maps} target="_blank" rel="noreferrer">Ver todas as avaliações no Google <Swap><ArrowUpRight size={15} /></Swap></a>
         </div>
       </section>
 
       <section className="location-section section-pad rise" id="localizacao">
-        <div className="location-copy reveal"><h2>Bem aqui.<br /><em>Bem pertinho.</em></h2><p>Um caminho curto para muito cuidado.</p><div className="address-line"><MapPin size={24} /><address><strong>Amor de Bicho</strong>St. M QNM 19 casa 25<br />Ceilândia, Brasília · DF<br />CEP 72215-205</address></div><button className="copy-address" onClick={copyAddress}>{copied ? <Check size={15} /> : <Copy size={15} />}<span role="status">{copied ? 'Endereço copiado!' : 'Copiar endereço'}</span></button><a className="button button-green" href={route} target="_blank" rel="noreferrer"><Navigation size={17} /><span className="label">Como chegar</span><Swap className="button-arrow"><ArrowUpRight size={17} /></Swap></a></div>
-        <div className="location-map reveal"><iframe title="Localização da Amor de Bicho em Ceilândia, Brasília" src={`https://maps.google.com/maps?q=${encodeURIComponent('Amor de Bicho QNM 19 casa 25 Ceilândia Brasília')}&z=16&output=embed`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" /><a className="map-location-card" href={maps} target="_blank" rel="noreferrer"><span className="map-pin-icon"><PawPrint size={24} /></span><span><strong>Amor de Bicho</strong><small><i className="live-dot" /> Clínica aberta 24 horas</small></span><Swap><ArrowUpRight size={20} /></Swap></a></div>
+        <div className="location-copy reveal"><h2>Bem aqui.<br /><em>Bem pertinho.</em></h2><p>Um caminho curto para muito cuidado.</p><div className="address-line"><MapPin size={24} /><address><strong>{brand.name}</strong>{brand.address.street}<br />{brand.address.district} · {brand.address.city}<br />CEP {brand.address.cep}</address></div><button className="copy-address" onClick={copyAddress}>{copied ? <Check size={15} /> : <Copy size={15} />}<span role="status">{copied ? 'Endereço copiado!' : 'Copiar endereço'}</span></button><button className="button button-green" onClick={() => setRouteRun(n => n + 1)}><Navigation size={17} /><span className="label">Como chegar</span><Swap className="button-arrow"><ArrowUpRight size={17} /></Swap></button></div>
+        <div className="location-map reveal"><DemoMap run={routeRun} /><a className="map-location-card" href={phone}><span className="map-pin-icon"><PawPrint size={24} /></span><span><strong>{brand.name}</strong><small><i className="live-dot" /> Aberta 24 horas, todos os dias</small></span><Swap><ArrowUpRight size={20} /></Swap></a></div>
       </section>
 
-      <section className="contact-band section-pad rise">
-        <div className="reveal"><h2>Precisou?<br />É só <em>chamar.</em></h2><p>O próximo cuidado começa com uma conversa — e a gente atende 24 horas, todos os dias.</p></div>
-        <a className="contact-phone reveal" href={phone}><span className="contact-phone-icon"><Phone size={27} /></span><span><small><i className="live-dot" /> Atendimento agora · aberto 24h</small><strong>(61) 3046-3056</strong></span><Swap><ArrowUpRight size={27} /></Swap></a>
-        <div className="contact-pets" aria-hidden="true"><Pet pet={pets.dachshund} className="pet-mini" says={['Liga pra gente!', 'Au!']} decorative /><Pet pet={pets.cat} className="pet-mini" says={['Miau!', 'Tô esperando!']} decorative /></div>
+      <section className="contact-band section-pad rise" id="contato">
+        <div className="reveal"><h2>Precisou?<br />É só <em>chamar.</em></h2><p>O próximo cuidado começa com uma conversa, e a gente atende 24 horas, todos os dias.</p></div>
+        <a className="contact-phone reveal" href={phone}><span className="contact-phone-icon"><Phone size={27} /></span><span><small><i className="live-dot" /> Atendimento agora · aberto 24h</small><strong>{brand.phone.label}</strong></span><Swap><ArrowUpRight size={27} /></Swap></a>
+        <div className="contact-pets" aria-hidden="true"><Pet pet={pets.dachshund} className="pet-mini" decorative /><Pet pet={pets.cat} className="pet-mini" decorative /></div>
       </section>
     </main>
 
@@ -253,35 +286,35 @@ function App() {
       <div className="footer-grid">
         <div className="footer-brand">
           <Logo light />
-          <p>Pet shop e clínica veterinária 24 horas em Ceilândia. Cuidado que faz parte da família.</p>
-          <span className="footer-badge"><Award size={15} /> 19 anos cuidando de quem você ama</span>
+          <p>Pet shop e clínica veterinária 24 horas. Cuidado que faz parte da família.</p>
+          <span className="footer-badge"><MoonStar size={15} /> Plantão 24h, 365 dias por ano</span>
           <div className="footer-social">
-            <a href={instagram} {...ext} aria-label="Instagram da Amor de Bicho"><Instagram size={18} /><span>@amordebicho.pet</span></a>
-            <a href={linktree} {...ext} aria-label="Todos os links da Amor de Bicho"><LinkIcon size={18} /><span>Todos os links</span></a>
+            <a href={brand.links.instagram} aria-label={`Instagram da ${brand.name}`}><Instagram size={18} /><span>Instagram</span></a>
+            <a href={brand.links.whatsapp} aria-label={`WhatsApp da ${brand.name}`}><MessageCircle size={18} /><span>WhatsApp</span></a>
           </div>
         </div>
         <nav className="footer-col" aria-label="Navegação do rodapé">
           <h3>Navegar</h3>
-          {[['Nossos cuidados', '#cuidados'], ['A clínica', '#clinica'], ['Avaliações', '#avaliacoes'], ['Onde estamos', '#localizacao']].map(([l, h]) => <a key={h} href={h}>{l}</a>)}
+          {navLinks.map(([l, h]) => <a key={h} href={h}>{l}</a>)}
         </nav>
         <div className="footer-col">
           <h3>A clínica</h3>
-          <span><Stethoscope size={16} /> Clínica veterinária</span>
+          <span><Stethoscope size={16} /> Consultas e exames</span>
           <span><ClockIcon size={16} /> Atendimento 24 horas</span>
-          <span><Syringe size={16} /> Internação e cirurgias</span>
-          <span><ShoppingBag size={16} /> Pet shop &amp; banho</span>
+          <span><Syringe size={16} /> Vacinas e prevenção</span>
+          <span><ShoppingBag size={16} /> Pet shop, banho e tosa</span>
         </div>
         <div className="footer-col footer-contact">
           <h3>Contato</h3>
-          <a href={phone}><Phone size={16} /> (61) 3046-3056</a>
-          <a href={maps} {...ext}><MapPin size={16} /> QNM 19, casa 25 — Ceilândia · DF</a>
-          <a href={talk} {...ext}><MessageCircle size={16} /> Fale com a gente</a>
+          <a href={phone}><Phone size={16} /> {brand.phone.label}</a>
+          <a href="#localizacao"><MapPin size={16} /> {brand.address.street} · {brand.address.district}</a>
+          <a href={talk}><MessageCircle size={16} /> Fale com a gente</a>
         </div>
       </div>
       <div className="footer-bottom">
-        <span>© {new Date().getFullYear()} Amor de Bicho · Clínica Veterinária &amp; Pet Shop</span>
+        <span>© {new Date().getFullYear()} {brand.name} · Clínica Veterinária &amp; Pet Shop</span>
         <a href="#inicio" className="back-top">Voltar ao topo <Swap><ArrowUpRight size={15} /></Swap></a>
-        <span className="footer-made">Feito com <Heart size={12} fill="currentColor" strokeWidth={0} /> em Ceilândia, Brasília · DF</span>
+        <span className="demo-note"><Sparkles size={13} /> Site demonstrativo: marca, contatos e depoimentos fictícios.</span>
       </div>
     </footer>
     <a className="floating-call" href={phone} aria-label="Ligar para a clínica, atendimento 24 horas"><Phone size={23} /><span>Precisa de cuidado?</span></a>

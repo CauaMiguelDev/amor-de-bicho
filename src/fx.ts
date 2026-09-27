@@ -252,7 +252,7 @@ export function startFx(): () => void {
 
 // The pets: each photo is split at its board line (see .pet-stage in CSS). Above the line the pet breathes,
 // sways and leans toward the pointer (skew/scale pivot on the line, so nothing tears); below it a flat cover
-// in the board colour lets the pet duck out of sight and peek back up.
+// in the board colour lets the pet duck out of sight and peek back up. They react with hearts, never words.
 function petLife({ fine, intro, perFrame, on }: {
   fine: boolean; intro: Promise<void>
   perFrame: <E>(fn: (e: E) => void) => (e: E) => void
@@ -262,19 +262,12 @@ function petLife({ fine, intro, perFrame, on }: {
   let lastTouch = 0
   const pets = [...document.querySelectorAll<HTMLElement>('.pet-stage')].map(stage => {
     const img = stage.querySelector('img')!, panel = stage.closest<HTMLElement>('.pet-panel')!
-    const bubble = panel.querySelector<HTMLElement>('.pet-bubble')!
     const line = parseFloat(getComputedStyle(panel).getPropertyValue('--line'))
-    const says = stage.dataset.says!.split('|')
     const idle = [
       gsap.fromTo(img, { '--breath': 1 }, { '--breath': 1.018, duration: 1.5 + Math.random() * .8, ease: 'sine.inOut', yoyo: true, repeat: -1, paused: true }),
       gsap.fromTo(img, { '--sway': -.8 }, { '--sway': .8, duration: 2.6 + Math.random() * 1.4, ease: 'sine.inOut', yoyo: true, repeat: -1, paused: true }),
     ]
-    let busy = false, talkTimer = 0, visible = false
-    const say = () => {
-      bubble.textContent = says[Math.floor(Math.random() * says.length)]
-      bubble.classList.remove('is-on'); void bubble.offsetWidth; bubble.classList.add('is-on')
-      clearTimeout(talkTimer); talkTimer = window.setTimeout(() => bubble.classList.remove('is-on'), 1800)
-    }
+    let busy = false, visible = false
     const hearts = () => {
       for (let i = 0; i < 3; i++) {
         const h = document.createElement('span')
@@ -284,10 +277,11 @@ function petLife({ fine, intro, perFrame, on }: {
         panel.append(h); setTimeout(() => h.remove(), 1700)
       }
     }
-    // Excited little stretch-and-settle, a word, some hearts.
-    const hop = () => {
+    // Excited little stretch-and-settle; hearts only when someone actually played with the pet.
+    const hop = (love = true) => {
       if (busy) return
-      busy = true; say(); hearts()
+      busy = true
+      if (love) hearts()
       gsap.timeline({ onComplete: () => { busy = false } })
         .to(img, { '--perk': 1.075, duration: .16, ease: 'power2.out' })
         .to(img, { '--perk': .965, duration: .13, ease: 'power2.in' })
@@ -304,18 +298,18 @@ function petLife({ fine, intro, perFrame, on }: {
         .to(stage, { '--cin': 0, duration: .35, ease: 'power1.out' }, .55)
     }
     gsap.set(stage, { '--cin': 1 }); gsap.set(img, { '--peek': line })
-    on(stage, 'click', hop)
+    on(stage, 'click', () => hop())
     on(stage, 'pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') hop() })
     on(stage, 'pointerdown', () => { lastTouch = performance.now() })
     const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; idle.forEach(t => visible ? t.play() : t.pause()) })
     io.observe(stage)
-    kill.push(() => { io.disconnect(); idle.forEach(t => t.kill()); clearTimeout(talkTimer) })
+    kill.push(() => { io.disconnect(); idle.forEach(t => t.kill()) })
     return { stage, img, panel, line, hop, peek, isVisible: () => visible }
   })
 
   const heroPets = pets.filter(p => p.stage.closest('.hero'))
   const miniPets = pets.filter(p => !p.stage.closest('.hero'))
-  // Entrance: dachshund, golden, cat pop up in turn; then the golden says hi.
+  // Entrance: dachshund, golden, cat pop up in turn; then the golden greets you with hearts.
   intro.then(() => {
     heroPets.forEach((p, i) => p.peek(.35 + i * .16))
     setTimeout(() => heroPets[1]?.hop(), 1900)
@@ -333,12 +327,12 @@ function petLife({ fine, intro, perFrame, on }: {
     .to(p.stage, { '--cduck': 1, duration: .25, ease: 'none' }, .1 + i * .08)
     .to(p.stage, { '--duck': p.line * .95, duration: .6, ease: 'power1.in' }, .1 + i * .08))
 
-  // Every few seconds, when nobody is playing with them, a visible pet does something.
+  // Now and then, when nobody is playing with them, a visible pet perks up (quietly, no hearts).
   const timer = setInterval(() => {
-    if (document.hidden || performance.now() - lastTouch < 5000) return
+    if (document.hidden || performance.now() - lastTouch < 6000) return
     const awake = pets.filter(p => p.isVisible())
-    awake[Math.floor(Math.random() * awake.length)]?.hop()
-  }, 5200)
+    awake[Math.floor(Math.random() * awake.length)]?.hop(false)
+  }, 8000)
 
   // Heads follow the pointer: lean (skew) toward it, stronger the closer it gets.
   if (fine) on(window, 'pointermove', perFrame((e: PointerEvent) => {

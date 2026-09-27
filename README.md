@@ -1,6 +1,6 @@
-# Amor de Bicho — Clínica Veterinária 24h & Pet Shop
+# Casa Focinho — Clínica Veterinária 24h & Pet Shop (site demonstrativo)
 
-Landing page da **Amor de Bicho**, pet shop e clínica veterinária 24 horas em Ceilândia, Brasília — DF.
+Landing page **demonstrativa** de uma clínica veterinária 24 horas com pet shop. A marca **Casa Focinho**, o telefone, o endereço, as notas e os depoimentos são **fictícios**: o projeto serve de portfólio e de modelo para apresentar a clínicas e pet shops.
 
 ### 🔗 Site no ar
 
@@ -10,12 +10,21 @@ Landing page da **Amor de Bicho**, pet shop e clínica veterinária 24 horas em 
 
 ## Sobre
 
-Página institucional com hero animado (os três pets espiam sobre a plaquinha e reagem ao mouse), seção de cuidados, manifesto, avaliações reais do Google em cartões deslizáveis, mapa da localização e contato. Feita com foco em movimento suave e responsividade (desktop, tablet e celular).
+Página com hero animado (os três pets espiam sobre a plaquinha e reagem ao mouse com coraçõezinhos), abas de cuidados, manifesto com números, depoimentos em cartões deslizáveis, mapa ilustrado com a rota se desenhando e contato. Feita com foco em movimento suave e responsividade (desktop, tablet e celular).
 
-- **Telefone:** (61) 3046-3056
-- **Instagram:** [@amordebicho.pet](https://www.instagram.com/amordebicho.pet/)
-- **Todos os links:** [linktr.ee/amordebichopetshopeconsultorio](https://linktr.ee/amordebichopetshopeconsultorio)
-- **Endereço:** St. M QNM 19 casa 25 — Ceilândia, Brasília · DF
+## Usar com um cliente real
+
+Todos os dados do negócio ficam em um único arquivo: **`src/brand.ts`**.
+
+- `brand`: nome, wordmark, telefone, endereço, fuso horário, nota e links (WhatsApp, Instagram, contato).
+- `reviews` e `reviewTopics`: depoimentos e assuntos mais citados.
+
+Troque esses valores pelos dados do cliente e também:
+
+1. Remova a nota "Site demonstrativo" do rodapé e a frase de números ilustrativos em Avaliações (`src/main.tsx`).
+2. Remova `<meta name="robots" content="noindex, nofollow">` do `index.html` para o site aparecer no Google.
+3. Se quiser um mapa real, troque o componente `DemoMap` por um embed do Google Maps com o endereço do cliente.
+4. Use fotos próprias da clínica (veja `ASSETS.md`).
 
 ## Tecnologias
 
@@ -28,7 +37,7 @@ npm install
 npm run dev
 ```
 
-O app abre em `http://localhost:5173`.
+O app abre em `http://localhost:5173/amor-de-bicho/`.
 
 ## Build de produção
 
@@ -47,6 +56,8 @@ npm run deploy
 
 Isso faz o build e envia a pasta `dist/` para a branch `gh-pages`, que o GitHub Pages serve.
 
+> O endereço ainda usa o nome antigo do repositório (`/amor-de-bicho/`). Se renomear o repositório no GitHub, atualize também o `base` em `vite.config.ts`.
+
 ---
 
-<sub>As fotos dos pets são de uma referência de layout — troque por fotos da própria clínica antes de um uso comercial definitivo.</sub>
+<sub>As fotos dos pets são de uma referência de layout, carregadas de um endereço externo. Troque por fotos próprias antes de qualquer uso comercial.</sub>

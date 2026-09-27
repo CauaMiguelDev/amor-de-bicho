@@ -1,4 +1,4 @@
-# Prompt — Camada de animação premium para a landing "Amor de Bicho"
+# Prompt — Camada de animação premium para a landing "Casa Focinho" (demo)
 
 > Cole este prompt inteiro na sua IDE de IA (Cursor, Claude Code, Windsurf).
 > Ele descreve **o que fazer**, não o código. Deixe a IDE implementar e mostre o resultado no navegador.
@@ -12,7 +12,7 @@
 - **Paleta:** menta `#effdf0` (fundo), verde-floresta `#1a3d1a` (texto/escuro), laranja `#e86a10` (ações), verde-hover `#2a5a2a`.
 - **Fontes:** `DM Serif Display` (títulos) e `Inter` (texto), já carregadas via Google Fonts.
 - **Easing padrão do projeto:** `--ease: cubic-bezier(.16,1,.3,1)`. Use-o em quase tudo. Para "pop" com overshoot use `cubic-bezier(.34,1.56,.64,1)`.
-- **Seções na ordem:** header fixo → hero (título + 3 pets + selo 24h + nota Google) → faixa marquee → cuidados (abas) → manifesto da clínica → avaliações → localização/mapa → faixa de contato → rodapé + botão flutuante de ligação.
+- **Seções na ordem:** header fixo → hero (título + 3 pets + selo 24h + nota dos tutores) → faixa marquee → cuidados (abas) → manifesto da clínica → avaliações → localização/mapa → faixa de contato → rodapé + botão flutuante de ligação.
 
 ## Objetivo
 
@@ -41,7 +41,7 @@ npm i gsap lenis
 ## 1. Preloader (index.html + CSS inline no `<head>`)
 
 - Tela cheia verde-floresta com o logo de **patinha se desenhando** (SVG `stroke-dashoffset` de 1→0) e os 3 dedinhos surgindo em `scale` com overshoot, um a um.
-- Wordmark "amor de bicho" faz fade-in embaixo.
+- Wordmark "casa focinho" faz fade-in embaixo.
 - Sai revelando o site com `clip-path: inset(0 0 100% 0)` (cortina subindo), `.9s cubic-bezier(.76,0,.24,1)`.
 - Dispara a saída em `Promise.race([document.fonts.ready, timeout(2200ms)])` — nunca trava a página. Em reduced-motion, não exiba.
 
@@ -49,7 +49,7 @@ npm i gsap lenis
 
 - **Título palavra por palavra:** quebre `h1`/`h2` em `<span>` por palavra dentro de uma máscara `overflow:hidden`; cada palavra entra de baixo com `y:105% → 0`, leve `rotate`, stagger de ~55ms. Dispara quando a seção entra na viewport (ScrollTrigger).
 - **Parallax de profundidade no scroll:** os 3 pets sobem em velocidades diferentes (o da direita mais rápido, o do centro mais lento) enquanto o texto do hero sobe e some (`y` negativo + `opacity`). Amarre ao progresso do ScrollTrigger do hero.
-- **Parallax de mouse:** selo "24h", nota do Google, patinha e coração decorativos deslocam poucos px seguindo o cursor (`--mouse-x/--mouse-y`), com `lerp` suave.
+- **Parallax de mouse:** selo "24h", nota dos tutores, patinha e coração decorativos deslocam poucos px seguindo o cursor (`--mouse-x/--mouse-y`), com `lerp` suave.
 - **Rastro de patinhas:** ao mover o mouse sobre o hero, deixe pegadas SVG alternando esquerda/direita ao longo do caminho, que aparecem e somem (~1.4s). Só desktop.
 - **CTA principal:** brilho pulsante sutil (`box-shadow` que expande e some), seta que gira 45° no hover, e leve `translateY` de flutuar.
 - **Legibilidade:** garanta halo/`text-shadow` na cor do fundo atrás do subtítulo, porque ele passa por cima das fotos.
@@ -58,7 +58,7 @@ npm i gsap lenis
 
 - Ponto laranja pequeno que gruda no mouse + anel que segue com `lerp` (~0.18).
 - Sobre `a`/`button`: o anel cresce e ganha preenchimento laranja translúcido.
-- Sobre fotos dos pets e o iframe do mapa: vira um estado "ver" (maior, translúcido claro).
+- Sobre fotos dos pets e o mapa: vira um estado "ver" (maior, translúcido claro).
 - Ao pressionar: encolhe. O cursor nativo continua visível (não faça `cursor:none`).
 
 ## 4. Micro-interações
@@ -72,8 +72,8 @@ npm i gsap lenis
 
 - Cabeçalhos de seção: título entra palavra por palavra (mesmo sistema do hero); parágrafo e botões entram em `y+opacity` com stagger encadeado (batch).
 - Use **`ScrollTrigger.batch`** com `start: 'top 85%'`, `once: true`, para os blocos `.reveal`.
-- **Números contando:** "4,4" e "407" contam de 0 até o valor quando entram na tela (ease-out quártico, ~1.6s, formatação `pt-BR`).
-- **Chips de assuntos** (clínica 46, carinho 12, tratado 10, internação 10): entram em cascata com `scale` + `y`, e no hover sobem levemente mudando de fundo.
+- **Números contando:** "4,9" e "320" contam de 0 até o valor quando entram na tela (ease-out quártico, ~1.6s, formatação `pt-BR`).
+- **Chips de assuntos** (atendimento 128, carinho 96, plantão 24h 71, banho & tosa 54): entram em cascata com `scale` + `y`, e no hover sobem levemente mudando de fundo.
 
 ## 6. Header e progresso
 
@@ -83,11 +83,11 @@ npm i gsap lenis
 
 ## 7. Seções específicas
 
-- **Faixa marquee** ("Amor em cada cuidado · Clínica 24h · …"): rolagem infinita contínua, pausa no hover. Uma segunda faixa (frases reais do Google, em verde) rola no sentido oposto.
+- **Faixa marquee** ("Amor em cada cuidado · Clínica 24h · …"): rolagem infinita contínua, pausa no hover. Uma segunda faixa (frases dos depoimentos, em verde) pode rolar no sentido oposto.
 - **Abas de cuidados:** troca de conteúdo com transição suave (fade/slide do bloco), ícone da aba ativa gira e fica laranja, indicador desliza.
 - **Avaliações em autoplay:** troca sozinha a cada ~7s com **barra de progresso** por cima; pausa quando o mouse está em cima ou quando recebe foco; setas e dots controlam manualmente. Transição do texto com fade/slide.
 - **Manifesto da clínica:** coração central com anel pulsante (ondas concêntricas saindo).
-- **Mapa:** pin com leve "bob" flutuante; iframe volta à saturação total no hover; card de localização sobe no hover.
+- **Mapa ilustrado (SVG):** pin com leve "bob" flutuante; a rota se desenha ao entrar na tela e ao clicar em "Como chegar"; card de localização sobe no hover.
 - **Contato + botão flutuante:** ícone de telefone "tocando" (chacoalha) com ondas concêntricas; patinha decorativa girando devagar ao fundo.
 
 ## 8. Rodapé
@@ -110,6 +110,6 @@ npm i gsap lenis
 ## O que NÃO fazer
 
 - Não invente preços, serviços, nomes de veterinários nem certificações.
-- Não deduza WhatsApp a partir do telefone. Só use links de WhatsApp/Linktree se forem fornecidos.
-- Não troque a paleta nem as fontes. Não remova o conteúdo de avaliações reais (positivas e negativas).
+- É um site demonstrativo: marca, telefone, endereço e depoimentos são fictícios e ficam em `src/brand.ts`. Não use dados de empresas reais.
+- Não troque a paleta nem as fontes.
 - Não baixe imagens novas nem substitua as fotos sem pedir.
